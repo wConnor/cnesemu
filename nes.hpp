@@ -3,7 +3,9 @@
 
 #include <cstdint>
 #include <memory>
+
 #include "rp2a03.hpp"
+#include "video.hpp"
 
 constexpr std::uint16_t MEMORY_SIZE = 8192;
 
@@ -15,6 +17,7 @@ public:
 
 private:
 	std::unique_ptr<RP2A03> rp2a03;
+	std::unique_ptr<Video> video;
 };
 
 #endif
