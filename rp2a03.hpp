@@ -7,7 +7,8 @@
 #include <array>
 #include <cstdint>
 
-constexpr std::uint16_t RAM_SIZE = 2048u;
+constexpr std::uint16_t RAM_SIZE = 2048;
+constexpr std::uint8_t STACK_SIZE = 255;
 
 class RP2A03
 {

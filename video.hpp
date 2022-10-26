@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <memory>
+#include <array>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_pixels.h>
@@ -26,7 +27,7 @@ public:
 	void update();
 
 private:
-	std::array <uint8_t, SCREEN_WIDTH * SCREEN_HEIGHT> memory;
+	std::array <std::uint8_t, SCREEN_WIDTH * SCREEN_HEIGHT> memory;
 	SDL_Window *win;
 	SDL_Renderer *renderer;
 };
