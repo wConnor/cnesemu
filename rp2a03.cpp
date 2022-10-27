@@ -29,7 +29,7 @@ void RP2A03::exec_instruction(std::uint16_t &instruction)
 		if (((sr >> 7) & 1) == 0b1) {
 			pc += (instruction & 0x00FFu);
 		}
-			
+
 		break;
 
 	case 0x4000: // RTI
@@ -41,6 +41,9 @@ void RP2A03::exec_instruction(std::uint16_t &instruction)
 		break;
 
 	case 0x6000: // RTS
+		pc = stack.top();
+		stack.pop();
+
 
 		break;
 
@@ -59,7 +62,7 @@ void RP2A03::exec_instruction(std::uint16_t &instruction)
 			sr |= 0b00000010u;
 		}
 
-		if ((iy >> 7) & 1) {
+		if (((iy >> 7) & 1) == 0b1) {
 			sr |= 0b10000000u;
 		}
 
@@ -81,7 +84,7 @@ void RP2A03::exec_instruction(std::uint16_t &instruction)
 		break;
 
 	case 0xD000: // BNE rel
-		if (((sr >> 1) & 1) == 0) {
+		if (((sr >> 1) & 1) == 0b0) {
 			pc += (instruction & 0x00FFu);
 		}
 		break;
@@ -94,11 +97,11 @@ void RP2A03::exec_instruction(std::uint16_t &instruction)
 		if (ix == mem[(instruction & 0x00FFu)]) {
 			sr |= 0b00000010u;
 		}
-		
+
 		break;
 
 	case 0xF000: // BEQ rel
-		if (((sr >> 1) & 1) == 1) {
+		if (((sr >> 1) & 1) == 0b1) {
 			pc += (instruction & 0x00FFu);
 		}
 		break;
