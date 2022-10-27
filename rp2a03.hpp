@@ -7,14 +7,14 @@
 #include <array>
 #include <cstdint>
 
-constexpr std::uint16_t RAM_SIZE = 2048;
+constexpr std::uint16_t MEM_SIZE = 2048;
 constexpr std::uint8_t STACK_SIZE = 255;
 
 class RP2A03
 {
 public:
 	RP2A03();
-	void exec_instruction(std::uint8_t &opcode);
+	void exec_instruction(std::uint16_t &instruction);
 	virtual ~RP2A03();
 
 private:
@@ -24,7 +24,7 @@ private:
 	std::uint16_t pc;
 
 	std::stack<std::uint8_t> stack;
-	std::array<std::uint8_t, RAM_SIZE> ram;
+	std::array<std::uint8_t, MEM_SIZE> mem;
 
 };
 
