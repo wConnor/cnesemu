@@ -46,6 +46,9 @@ void CPU6502::exec_instruction(const INSTRUCTION &instruction, const std::uint16
 
 		break;
 	case INSTRUCTION::BCC:
+		if ((sr & 0b00000001) == 0) {
+			pc += address; // potentially wrong
+		}
 
 		break;
 	case INSTRUCTION::BCS:
@@ -147,6 +150,7 @@ void CPU6502::exec_instruction(const INSTRUCTION &instruction, const std::uint16
 		break;
 	case INSTRUCTION::DEC:
 		mem[address]--;
+
 		if (mem[address] == 0) {
 			sr |= 0b00000010;
 		}
@@ -159,21 +163,87 @@ void CPU6502::exec_instruction(const INSTRUCTION &instruction, const std::uint16
 
 		break;
 	case INSTRUCTION::DEX:
+		ix--;
+
+		if (ix == 0) {
+			sr |= 0b00000010;
+		}
+
+		if ((ix >> 7) & 1) {
+			sr |= 0b10000000;
+		}
+
+		pc++;
 
 		break;
 	case INSTRUCTION::DEY:
+		iy--;
+
+		if (iy == 0) {
+			sr |= 0b00000010;
+		}
+
+		if ((iy >> 7) & 1) {
+			sr |= 0b10000000;
+		}
+
+		pc++;
 
 		break;
 	case INSTRUCTION::EOR:
+		acc ^= mem[address];
+
+		if (acc == 0) {
+			sr |= 0b00000010;
+		}
+
+		if ((acc >> 7) & 1) {
+			sr |= 0b10000000;
+		}
+
+		pc++;
 
 		break;
 	case INSTRUCTION::INC:
+		mem[address]++;
+
+		if (mem[address] == 0) {
+			sr |= 0b00000010;
+		}
+
+		if ((mem[address] >> 7) & 1) {
+			sr |= 0b10000000;
+		}
+
+		pc++;
 
 		break;
 	case INSTRUCTION::INX:
+		ix++;
+
+		if (ix == 0) {
+			sr |= 0b00000010;
+		}
+
+		if ((ix >> 7) & 1) {
+			sr |= 0b10000000;
+		}
+
+		pc++;
 
 		break;
 	case INSTRUCTION::INY:
+		iy++;
+
+		if (iy == 0) {
+			sr |= 0b00000010;
+		}
+
+		if ((iy >> 7) & 1) {
+			sr |= 0b10000000;
+		}
+
+		pc++;
 
 		break;
 	case INSTRUCTION::JMP:
