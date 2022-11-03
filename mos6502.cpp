@@ -1,11 +1,11 @@
-#include "rp2a03.hpp"
+#include "mos6502.hpp"
 
-RP2A03::RP2A03()
+MOS6502::MOS6502()
 {
 
 }
 
-RP2A03::INSTRUCTIONINFO RP2A03::fetch_instruction(const std::uint8_t &instruction)
+MOS6502::INSTRUCTIONINFO MOS6502::fetch_instruction(const std::uint8_t &instruction)
 {
 	// searches for the instruction in the opcode matrix by its hexcode.
 	auto full_instruction = std::find_if(instr_matrix.begin(),
@@ -17,17 +17,17 @@ RP2A03::INSTRUCTIONINFO RP2A03::fetch_instruction(const std::uint8_t &instructio
 	return *full_instruction;
 }
 
-void RP2A03::decode_instruction(const INSTRUCTIONINFO &full_instruction)
+void MOS6502::decode_instruction(const INSTRUCTIONINFO &full_instruction)
 {
 
 }
 
-void RP2A03::exec_instruction(const std::uint8_t &instruction)
+void MOS6502::exec_instruction(const std::uint8_t &instruction)
 {
 
 }
 
-RP2A03::~RP2A03()
+MOS6502::~MOS6502()
 {
 
 }

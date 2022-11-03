@@ -1,5 +1,5 @@
-#ifndef RP2A03_HPP
-#define RP2A03_HPP
+#ifndef MOS6502_HPP
+#define MOS6502_HPP
 
 #include <bitset>
 #include <string>
@@ -12,7 +12,7 @@ constexpr std::uint16_t MEM_SIZE = 2048;
 constexpr std::uint8_t STACK_SIZE = 255;
 constexpr std::uint8_t INSTRUCTION_COUNT = 255;
 
-class RP2A03
+class MOS6502
 {
 public:
 	/* ADDRMODE & INSTRUCTION source:
@@ -98,11 +98,11 @@ public:
 		ADDRMODE addr_mode;
 	};
 
-	RP2A03();
+	MOS6502();
 	INSTRUCTIONINFO fetch_instruction(const std::uint8_t &op_code);
 	void decode_instruction(const INSTRUCTIONINFO &full_instruction);
 	void exec_instruction(const std::uint8_t &instruction);
-	virtual ~RP2A03();
+	virtual ~MOS6502();
 
 
 private:

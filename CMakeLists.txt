@@ -16,8 +16,8 @@ set(PROJECT_SOURCES
   nes.hpp
   nes.cpp
 
-  rp2a03.hpp
-  rp2a03.cpp
+  mos6502.hpp
+  mos6502.cpp
 
   video.hpp
   video.cpp
