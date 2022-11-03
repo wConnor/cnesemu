@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <memory>
 
-#include "mos6502.hpp"
+#include "cpu6502.hpp"
 #include "video.hpp"
 
 constexpr std::uint16_t MEMORY_SIZE = 8192;
@@ -16,7 +16,7 @@ public:
 	virtual ~NES();
 
 private:
-	std::unique_ptr<MOS6502> mos6502;
+	std::unique_ptr<CPU6502> mos6502;
 	std::unique_ptr<Video> video;
 };
 

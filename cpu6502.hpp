@@ -1,5 +1,5 @@
-#ifndef MOS6502_HPP
-#define MOS6502_HPP
+#ifndef CPU6502_HPP
+#define CPU6502_HPP
 
 #include <bitset>
 #include <string>
@@ -13,7 +13,7 @@ constexpr std::uint16_t MEM_SIZE = 2048;
 constexpr std::uint8_t STACK_SIZE = 255;
 constexpr std::uint8_t INSTRUCTION_COUNT = 255;
 
-class MOS6502
+class CPU6502
 {
 public:
 	/* ADDRMODE & INSTRUCTION source:
@@ -100,11 +100,11 @@ public:
 		std::uint8_t cycles;
 	};
 
-	MOS6502();
+	CPU6502();
 	INSTRUCTIONINFO fetch_instruction(const std::uint8_t &op_code);
 	void decode_instruction(const INSTRUCTIONINFO &full_instruction);
 	void exec_instruction(const INSTRUCTION &instruction, const std::uint16_t &address);
-	virtual ~MOS6502();
+	virtual ~CPU6502();
 
 
 private:

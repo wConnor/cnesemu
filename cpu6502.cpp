@@ -1,11 +1,11 @@
-#include "mos6502.hpp"
+#include "cpu6502.hpp"
 
-MOS6502::MOS6502()
+CPU6502::CPU6502()
 {
 
 }
 
-MOS6502::INSTRUCTIONINFO MOS6502::fetch_instruction(const std::uint8_t &instruction)
+CPU6502::INSTRUCTIONINFO CPU6502::fetch_instruction(const std::uint8_t &instruction)
 {
 	// searches for the instruction in the opcode matrix by its hexcode.
 	auto full_instruction = std::find_if(instr_matrix.begin(),
@@ -17,12 +17,12 @@ MOS6502::INSTRUCTIONINFO MOS6502::fetch_instruction(const std::uint8_t &instruct
 	return *full_instruction;
 }
 
-void MOS6502::decode_instruction(const INSTRUCTIONINFO &full_instruction)
+void CPU6502::decode_instruction(const INSTRUCTIONINFO &full_instruction)
 {
 
 }
 
-void MOS6502::exec_instruction(const INSTRUCTION &instruction, const std::uint16_t &address)
+void CPU6502::exec_instruction(const INSTRUCTION &instruction, const std::uint16_t &address)
 {
 	switch(instruction) {
 	case INSTRUCTION::ADC:
@@ -407,7 +407,7 @@ void MOS6502::exec_instruction(const INSTRUCTION &instruction, const std::uint16
 	}
 }
 
-MOS6502::~MOS6502()
+CPU6502::~CPU6502()
 {
 
 }
