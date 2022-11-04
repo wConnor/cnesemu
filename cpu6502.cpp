@@ -26,6 +26,21 @@ void CPU6502::exec_instruction(const INSTRUCTION &instruction, const std::uint16
 {
 	switch(instruction) {
 	case INSTRUCTION::ADC:
+		if (acc > 0 && mem[address] > std::numeric_limits<std::uint8_t>::max() - acc - (sr & (1 << 0))) {
+			//sr |= 0b10000001; // definitely wrong; must study more.
+		}
+
+		acc += mem[address] + (sr & (1 << 0));
+
+		if (acc == 0) {
+			sr |= 0b00000010;
+		}
+
+		if ((acc >> 7) & 1) {
+			sr |= 0b10000000;
+		}
+
+		pc++;
 
 		break;
 	case INSTRUCTION::AND:
@@ -46,27 +61,42 @@ void CPU6502::exec_instruction(const INSTRUCTION &instruction, const std::uint16
 
 		break;
 	case INSTRUCTION::BCC:
-		if ((sr & 0b00000001) == 0) {
-			pc += address; // potentially wrong
-		}
+		(sr & 0b00000001) == 0
+			? pc += address
+			: pc++;
 
 		break;
 	case INSTRUCTION::BCS:
+		(sr & 0b00000001) != 0
+			? pc += address
+			: pc++;
 
 		break;
 	case INSTRUCTION::BEQ:
+		(sr & 0b00000010) != 0
+			? pc += address
+			: pc++;
 
 		break;
 	case INSTRUCTION::BIT:
 
 		break;
 	case INSTRUCTION::BMI:
+		(sr & 0b1000000) != 0
+			? pc += address
+			: pc++;
 
 		break;
 	case INSTRUCTION::BNE:
+		(sr & 0b00000010) == 0
+			? pc += address
+			: pc++;
 
 		break;
 	case INSTRUCTION::BPL:
+		(sr & 0b10000000) == 0
+			? pc += address
+			: pc++;
 
 		break;
 	case INSTRUCTION::BRK:
@@ -77,9 +107,15 @@ void CPU6502::exec_instruction(const INSTRUCTION &instruction, const std::uint16
 
 		break;
 	case INSTRUCTION::BVC:
+		(sr & 0b01000000) == 0
+			? pc += address
+			: pc++;
 
 		break;
 	case INSTRUCTION::BVS:
+		(sr & 0b01000000) != 0
+			? pc += address
+			: pc++;
 
 		break;
 	case INSTRUCTION::CLC:

@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <algorithm>
 #include <memory>
+#include <limits>
 
 constexpr std::uint16_t MEM_SIZE = 2048;
 constexpr std::uint8_t STACK_SIZE = 255;
