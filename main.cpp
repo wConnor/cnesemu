@@ -12,6 +12,7 @@ int main(int argc, char *argv[])
 	}
 
 	nes->insert_cartridge(std::filesystem::path(static_cast<std::string>(argv[1])));
+	nes->power_on();
 
 	return 0;
 }

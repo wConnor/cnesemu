@@ -1,4 +1,5 @@
 #include "nes.hpp"
+#include <ios>
 
 NES::NES()
 {
@@ -12,7 +13,9 @@ void NES::insert_cartridge(const std::filesystem::path &rom)
 
 void NES::power_on()
 {
+	rom_contents = this->cartridge->load();
 
+	// initialise CPU, Video, Sound, etc.
 }
 
 void NES::power_off()

@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <vector>
 
 #include "cpu6502.hpp"
 #include "cartridge.hpp"
@@ -24,6 +25,8 @@ private:
 	std::unique_ptr<CPU6502> mos6502;
 	std::unique_ptr<Cartridge> cartridge;
 	std::unique_ptr<Video> video;
+
+	std::shared_ptr<std::vector<std::uint8_t>> rom_contents;
 };
 
 #endif
