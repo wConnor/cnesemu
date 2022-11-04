@@ -19,6 +19,9 @@ set(PROJECT_SOURCES
   cpu6502.hpp
   cpu6502.cpp
 
+  cartridge.hpp
+  cartridge.cpp
+
   video.hpp
   video.cpp
   )
