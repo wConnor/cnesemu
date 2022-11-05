@@ -1,6 +1,8 @@
 #ifndef CPU6502_HPP
 #define CPU6502_HPP
 
+#include <spdlog/spdlog.h>
+
 #include <bitset>
 #include <string>
 #include <stack>
@@ -105,6 +107,7 @@ public:
 	INSTRUCTIONINFO fetch_instruction(const std::uint8_t &op_code);
 	void decode_instruction(const INSTRUCTIONINFO &full_instruction);
 	void exec_instruction(const INSTRUCTION &instruction, const std::uint16_t &address);
+	void clear();
 	virtual ~CPU6502();
 
 

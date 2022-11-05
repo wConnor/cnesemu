@@ -1,5 +1,4 @@
 #include "nes.hpp"
-#include <ios>
 
 NES::NES()
 {
@@ -8,24 +7,35 @@ NES::NES()
 
 void NES::insert_cartridge(const std::filesystem::path &rom)
 {
-	this->cartridge = std::make_unique<Cartridge>(rom);
+	cartridge = std::make_unique<Cartridge>(rom);
+	spdlog::debug("Cartridge inserted from file {}.", std::string(rom));
+}
+
+void NES::eject_cartridge()
+{
+	cartridge = nullptr;
+	rom_contents = nullptr;
 }
 
 void NES::power_on()
 {
-	rom_contents = this->cartridge->load();
-
+	spdlog::debug("Powering up NES.");
+	rom_contents = cartridge->load();
+	spdlog::debug("Loaded ROM of size {0:d} bytes.", rom_contents->size());
 	// initialise CPU, Video, Sound, etc.
 }
 
 void NES::power_off()
 {
-
+	cpu->clear();
+	//video->clear();
+	//...
 }
 
 void NES::reset()
 {
-
+	power_off();
+	power_on();
 }
 
 NES::~NES()

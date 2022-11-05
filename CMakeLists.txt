@@ -28,5 +28,6 @@ set(PROJECT_SOURCES
 
 find_package(Threads REQUIRED)
 find_package(SDL2 REQUIRED)
+find_package(spdlog REQUIRED)
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
-target_link_libraries(${PROJECT_NAME} SDL2::SDL2 SDL2::SDL2main Threads::Threads)
+target_link_libraries(${PROJECT_NAME} SDL2::SDL2 SDL2::SDL2main Threads::Threads spdlog::spdlog_header_only)

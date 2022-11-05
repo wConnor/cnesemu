@@ -1,9 +1,15 @@
 #include "nes.hpp"
-#include <string>
+
 #include <iostream>
+#include <spdlog/common.h>
+#include <spdlog/spdlog.h>
 
 int main(int argc, char *argv[])
 {
+	argc >= 3 && (std::strcmp(argv[2], "-d") == 0)
+		? spdlog::set_level(spdlog::level::debug)
+		: spdlog::set_level(spdlog::level::info);
+
 	std::unique_ptr<NES> nes = std::make_unique<NES>();
 
 	if (argc == 1) {

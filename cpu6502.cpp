@@ -513,6 +513,15 @@ void CPU6502::exec_instruction(const INSTRUCTION &instruction, const std::uint16
 	}
 }
 
+void CPU6502::clear()
+{
+	acc = ix = iy = sp = sr = 0x00;
+	pc = 0x0000;
+	std::fill(mem.begin(), mem.end(), 0x00);
+	stack = std::stack<std::uint8_t>();
+	spdlog::debug("Cleared CPU's memory and registers.");
+}
+
 CPU6502::~CPU6502()
 {
 
