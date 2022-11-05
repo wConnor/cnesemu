@@ -110,7 +110,6 @@ public:
 	void clear();
 	virtual ~CPU6502();
 
-
 private:
 	/* registers: accumulator, x index, y index, stack pointer, status register, program counter
 	   status register: bit 5 can not be changed and is always set to 1.

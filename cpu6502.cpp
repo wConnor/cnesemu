@@ -19,11 +19,14 @@ CPU6502::INSTRUCTIONINFO CPU6502::fetch_instruction(const std::uint8_t &instruct
 
 void CPU6502::decode_instruction(const INSTRUCTIONINFO &full_instruction)
 {
-
+	exec_instruction(full_instruction.instr, 0x0000);
 }
 
 void CPU6502::exec_instruction(const INSTRUCTION &instruction, const std::uint16_t &address)
 {
+	spdlog::debug("6502 executing instruction {0:x}", address);
+	spdlog::debug("pc={0:x}, acc={0:x}, ix={0:x}, iy={0:x}, sp={0:x}, sr={0:b}", pc, acc, ix, iy, sp, sr);
+
 	switch(instruction) {
 	case INSTRUCTION::ADC:
 		if (acc > 0 && mem[address] > std::numeric_limits<std::uint8_t>::max() - acc - (sr & (1 << 0))) {

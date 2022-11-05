@@ -15,14 +15,16 @@ void NES::eject_cartridge()
 {
 	cartridge = nullptr;
 	rom_contents = nullptr;
+	spdlog::debug("Cartridge ejected. No ROM loaded.");
 }
 
 void NES::power_on()
 {
-	spdlog::debug("Powering up NES.");
 	rom_contents = cartridge->load();
 	spdlog::debug("Loaded ROM of size {0:d} bytes.", rom_contents->size());
 	// initialise CPU, Video, Sound, etc.
+
+	spdlog::debug("NES powered on.");
 }
 
 void NES::power_off()
@@ -30,6 +32,7 @@ void NES::power_off()
 	cpu->clear();
 	//video->clear();
 	//...
+	spdlog::debug("NES powered off.");
 }
 
 void NES::reset()
