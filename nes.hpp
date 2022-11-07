@@ -7,8 +7,6 @@
 #include "cartridge.hpp"
 #include "video.hpp"
 
-constexpr std::uint16_t MEMORY_SIZE = 8192;
-
 class NES
 {
 public:
@@ -20,12 +18,14 @@ public:
 	void reset();
 	virtual ~NES();
 
+
 private:
 	std::unique_ptr<CPU6502> cpu;
 	std::unique_ptr<Cartridge> cartridge;
 	std::unique_ptr<Video> video;
 
 	std::shared_ptr<std::vector<std::uint8_t>> rom_contents;
+	std::shared_ptr<std::array<std::uint8_t, MEM_SIZE>> mem;
 };
 
 #endif

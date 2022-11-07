@@ -103,12 +103,16 @@ public:
 		std::uint8_t cycles;
 	};
 
+
 	CPU6502();
-	INSTRUCTIONINFO fetch_instruction(const std::uint8_t &op_code);
-	void decode_instruction(const INSTRUCTIONINFO &full_instruction);
-	void exec_instruction(const INSTRUCTION &instruction, const std::uint16_t &address);
+	std::uint8_t fetch_operand_length(const std::uint8_t &op_code);
+	void decode_instruction(const std::uint16_t &operand);
+	void exec_instruction(const std::uint16_t &address);
 	void clear();
 	virtual ~CPU6502();
+
+	void set_mem(const std::shared_ptr<std::array<std::uint8_t, MEM_SIZE>> &mem);
+	void nes_init_regs();
 
 private:
 	/* registers: accumulator, x index, y index, stack pointer, status register, program counter
@@ -119,9 +123,11 @@ private:
 	std::uint16_t pc;
 
 	std::stack<std::uint8_t> stack;
-	std::array<std::uint8_t, MEM_SIZE> mem;
+	std::shared_ptr<std::array<std::uint8_t, MEM_SIZE>> mem;
 
-	const std::array<INSTRUCTIONINFO, INSTRUCTION_COUNT> instr_matrix = {
+	INSTRUCTIONINFO current_instruction;
+
+	std::array<INSTRUCTIONINFO, INSTRUCTION_COUNT> instr_matrix = {
 		INSTRUCTIONINFO
 		{ 0x00, INSTRUCTION::BRK, ADDRMODE::IMP, 7 },
 		{ 0x01, INSTRUCTION::ORA, ADDRMODE::INX, 6 },
