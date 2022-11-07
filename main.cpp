@@ -1,8 +1,6 @@
 #include "nes.hpp"
 
 #include <iostream>
-#include <spdlog/common.h>
-#include <spdlog/spdlog.h>
 
 int main(int argc, char *argv[])
 {

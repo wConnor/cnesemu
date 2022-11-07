@@ -24,6 +24,12 @@ set(PROJECT_SOURCES
 
   video.hpp
   video.cpp
+
+  instruction.hpp
+
+  addrmode.hpp
+
+  fullinstruction.hpp
   )
 
 find_package(Threads REQUIRED)

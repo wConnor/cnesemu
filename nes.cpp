@@ -1,5 +1,4 @@
 #include "nes.hpp"
-#include <memory>
 
 NES::NES()
 {
@@ -26,13 +25,13 @@ void NES::power_on()
 	spdlog::debug("Loaded ROM of size {0:d} bytes.", rom_contents->size());
 	cpu->set_mem(mem);
 	cpu->nes_init_regs();
-	//video->set_mem(std::make_shared<std::array<std::uint8_t, MEM_SIZE>>(this->mem));
+	//video->set_mem(mem);
 
-	// initialise CPU, Video, Sound, etc.
-	cpu->decode_instruction(cpu->fetch_operand_length(0x7Du));
-	cpu->decode_instruction(cpu->fetch_operand_length(0x3Du));
-	cpu->decode_instruction(cpu->fetch_operand_length(0x7Eu));
-	cpu->decode_instruction(cpu->fetch_operand_length(0x8Cu));
+	// enter FDE cycle loop.
+	cpu->decode_instruction(0x7Du);
+	cpu->decode_instruction(0x3Du);
+	cpu->decode_instruction(0x7Eu);
+	cpu->decode_instruction(0x8Cu);
 }
 
 void NES::power_off()

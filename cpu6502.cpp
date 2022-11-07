@@ -5,47 +5,13 @@ CPU6502::CPU6502()
 
 }
 
-std::uint8_t CPU6502::fetch_operand_length(const std::uint8_t &op_code)
+void CPU6502::fetch_fullinstruction(const std::uint8_t &op_code)
 {
 	// searches for the instruction in the opcode matrix by its hexcode.
 	this->current_instruction = *std::find_if(instr_matrix.begin(),
 											  instr_matrix.end(),
 											  [&op_code]
-											  (const INSTRUCTIONINFO &instr_info) -> bool { return instr_info.op_code == op_code; });
-
-	// instruction found in matrix
-	switch (current_instruction.addr_mode) {
-	case ADDRMODE::ABS:
-	case ADDRMODE::ABX:
-	case ADDRMODE::ABY:
-		return 3;
-
-	case ADDRMODE::ACC:
-		return 0;
-
-	case ADDRMODE::IMM:
-		return 2;
-
-	case ADDRMODE::IMP:
-		return 1;
-
-	case ADDRMODE::IND:
-		return 3;
-
-	case ADDRMODE::INX:
-	case ADDRMODE::INY:
-		return 2;
-
-	case ADDRMODE::REL:
-		return 2;
-
-	case ADDRMODE::ZPG:
-	case ADDRMODE::ZPX:
-	case ADDRMODE::ZPY:
-		return 2;
-	}
-
-	return 0;
+											  (const FULLINSTRUCTION &full_instr) -> bool { return full_instr.op_code == op_code; });
 }
 
 void CPU6502::decode_instruction(const std::uint16_t &operand)
@@ -61,7 +27,7 @@ void CPU6502::decode_instruction(const std::uint16_t &operand)
 		exec_instruction(operand + iy);
 		break;
 	case ADDRMODE::ACC:
-		exec_instruction(acc); // fix
+		exec_instruction(operand); // fix
 		break;
 	case ADDRMODE::IMM:
 		exec_instruction(operand);
@@ -96,8 +62,8 @@ void CPU6502::decode_instruction(const std::uint16_t &operand)
 
 void CPU6502::exec_instruction(const std::uint16_t &address)
 {
-	spdlog::debug("opcode=0x{0:2x}, operand=0x{0:4x}", current_instruction.op_code, address);
-	spdlog::debug("pc=0x{0:4x}, acc=0x{0:2x}, ix=0x{0:2x}, iy=0x{0:2x}, sp=0x{0:2x}, sr=0b{0:8b}", pc, acc, ix, iy, sp, sr);
+	spdlog::debug("opcode=0x{:02x}, operand=0x{:04x}", current_instruction.op_code, address);
+	spdlog::debug("pc=0x{:04x}, acc=0x{:02x}, ix=0x{:02x}, iy=0x{:02x}, sp=0x{:02x}, sr=0b{:08b}", pc, acc, ix, iy, sp, sr);
 
 	switch(current_instruction.instr) {
 	case INSTRUCTION::ADC:

@@ -1,8 +1,6 @@
 #ifndef NES_HPP
 #define NES_HPP
 
-#include <cstdint>
-
 #include "cpu6502.hpp"
 #include "cartridge.hpp"
 #include "video.hpp"
@@ -17,7 +15,6 @@ public:
 	void power_off();
 	void reset();
 	virtual ~NES();
-
 
 private:
 	std::unique_ptr<CPU6502> cpu;
