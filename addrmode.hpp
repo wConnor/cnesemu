@@ -17,6 +17,8 @@ enum class ADDRMODE : std::uint8_t {
 	ZPG, // zeropage
 	ZPX, // zeropage, offset by index X
 	ZPY, // zeropage, offset by index Y
+
+	ILL, // illegal addressing mode
 };
 
 #endif

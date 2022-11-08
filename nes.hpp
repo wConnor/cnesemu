@@ -1,6 +1,7 @@
 #ifndef NES_HPP
 #define NES_HPP
 
+#include "bus.hpp"
 #include "cpu6502.hpp"
 #include "cartridge.hpp"
 #include "video.hpp"
@@ -21,6 +22,7 @@ private:
 	std::unique_ptr<Cartridge> cartridge;
 	std::unique_ptr<Video> video;
 
+	std::shared_ptr<Bus> bus;
 	std::shared_ptr<std::vector<std::uint8_t>> rom_contents;
 	std::shared_ptr<std::array<std::uint8_t, MEM_SIZE>> mem;
 };

@@ -16,6 +16,9 @@ set(PROJECT_SOURCES
   nes.hpp
   nes.cpp
 
+  bus.hpp
+  bus.cpp
+
   cpu6502.hpp
   cpu6502.cpp
 

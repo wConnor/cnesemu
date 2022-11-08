@@ -60,6 +60,8 @@ enum class INSTRUCTION : std::uint8_t {
 	TXA, // transfer index X to ACC
 	TXS, // transfer index X to SP
 	TYA, // transfer index Y to ACC
+
+	ILL, // illegal opcode
 };
 
 #endif

@@ -3,6 +3,7 @@
 NES::NES()
 {
 	cpu = std::make_unique<CPU6502>();
+	bus = std::make_shared<Bus>();
 	mem = std::make_shared<std::array<std::uint8_t, MEM_SIZE>>();
 }
 
@@ -23,15 +24,18 @@ void NES::power_on()
 {
 	rom_contents = cartridge->load();
 	spdlog::debug("Loaded ROM of size {0:d} bytes.", rom_contents->size());
-	cpu->set_mem(mem);
+	std::fill(mem->begin(), mem->end(), 0x00);
+	bus->set_mem(mem);
+	cpu->set_bus(bus);
 	cpu->nes_init_regs();
-	//video->set_mem(mem);
 
-	// enter FDE cycle loop.
-	cpu->decode_instruction(0x7Du);
-	cpu->decode_instruction(0x3Du);
-	cpu->decode_instruction(0x7Eu);
-	cpu->decode_instruction(0x8Cu);
+	// random test instructions
+	cpu->fetch_fullinstruction(0x7D);
+	cpu->decode_instruction(0xAA);
+
+	cpu->decode_instruction(0x0A3D);
+	cpu->decode_instruction(0x007E);
+	cpu->decode_instruction(0xBC8C);
 }
 
 void NES::power_off()
