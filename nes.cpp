@@ -27,7 +27,6 @@ void NES::power_on()
 	std::fill(mem->begin(), mem->end(), 0x00);
 	bus->set_mem(mem);
 	cpu->set_bus(bus);
-	cpu->nes_init_regs();
 
 	// random test instructions
 	cpu->fetch_fullinstruction(0x7D);
