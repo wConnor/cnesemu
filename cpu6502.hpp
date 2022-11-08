@@ -43,14 +43,21 @@ private:
 	   status register: bit 5 can not be changed and is always set to 1.
 	   | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0 |
 	   | N | V | - | B | D | I | Z | C | */
-	std::uint8_t acc, x, y, sp, sr;
-	std::uint16_t pc;
+	std::uint8_t acc = 0x00;
+	std::uint8_t x = 0x00;
+	std::uint8_t y = 0x00;
+	std::uint8_t sp = 0x00;
+	std::uint8_t sr = 0x00;
+	std::uint16_t pc = 0x0000;
 
 	std::stack<std::uint8_t> stack;
 
 	FULLINSTRUCTION current_instruction;
 
-	std::shared_ptr<Bus> bus;
+	std::shared_ptr<Bus> bus = nullptr;
+	std::uint8_t opcode = 0x00;
+	std::uint16_t addr_abs = 0x0000;
+	std::uint16_t addr_rel = 0x0000;
 	std::uint8_t cycles = 0;
 
 	std::array<FULLINSTRUCTION, INSTRUCTION_COUNT> instr_matrix;

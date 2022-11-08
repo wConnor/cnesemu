@@ -263,17 +263,12 @@ CPU6502::CPU6502()
 		{ 0xFD, INSTRUCTION::SBC, ADDRMODE::ABX, 3, 4 },
 		{ 0xFE, INSTRUCTION::INC, ADDRMODE::ABX, 3, 7 },
 	};
-
-	this->bus = std::make_unique<Bus>();
 }
 
 void CPU6502::fetch_fullinstruction(const std::uint8_t &op_code)
 {
 	// searches for the instruction in the opcode matrix by its hexcode.
-	this->current_instruction = *std::find_if(instr_matrix.begin(),
-											  instr_matrix.end(),
-											  [&op_code]
-											  (const FULLINSTRUCTION &full_instr) -> bool { return full_instr.op_code == op_code; });
+	this->current_instruction = instr_matrix[op_code];
 }
 
 void CPU6502::decode_instruction(const std::uint16_t &operand)
@@ -332,11 +327,11 @@ void CPU6502::exec_instruction(const std::uint16_t &address)
 
 	switch(current_instruction.instr) {
 	case INSTRUCTION::ADC:
-		if (acc > 0 && bus->read(address) > std::numeric_limits<std::uint8_t>::max() - acc - (sr & (1 << 0))) {
+		if (acc > 0 && read(address) > std::numeric_limits<std::uint8_t>::max() - acc - (sr & (1 << 0))) {
 			//sr |= 0b10000001; // definitely wrong; must study more.
 		}
 
-		acc += bus->read(address) + (sr & (1 << 0));
+		acc += read(address) + (sr & (1 << 0));
 
 		if (acc == 0) {
 			sr |= 0b00000010;
@@ -350,7 +345,7 @@ void CPU6502::exec_instruction(const std::uint16_t &address)
 
 		break;
 	case INSTRUCTION::AND:
-		acc &= bus->read(address);
+		acc &= read(address);
 
 		if (acc == 0) {
 			sr |= 0b00000010;
@@ -445,15 +440,15 @@ void CPU6502::exec_instruction(const std::uint16_t &address)
 
 		break;
 	case INSTRUCTION::CMP:
-		if (acc >= bus->read(address)) {
+		if (acc >= read(address)) {
 			sr |= 0b00000001;
 		}
 
-		if (acc == bus->read(address)) {
+		if (acc == read(address)) {
 			sr |= 0b00000010;
 		}
 
-		if (((acc - bus->read(address)) >> 7) & 1) {
+		if (((acc - read(address)) >> 7) & 1) {
 			sr |= 0b10000000;
 		}
 
@@ -461,15 +456,15 @@ void CPU6502::exec_instruction(const std::uint16_t &address)
 
 		break;
 	case INSTRUCTION::CPX:
-		if (acc >= bus->read(address)) {
+		if (acc >= read(address)) {
 			sr |= 0b00000001;
 		}
 
-		if (acc == bus->read(address)) {
+		if (acc == read(address)) {
 			sr |= 0b00000010;
 		}
 
-		if (((x - bus->read(address))) & 1) {
+		if (((x - read(address))) & 1) {
 			sr |= 0b10000000;
 		}
 
@@ -477,27 +472,27 @@ void CPU6502::exec_instruction(const std::uint16_t &address)
 
 		break;
 	case INSTRUCTION::CPY:
-		if (acc >= bus->read(address)) {
+		if (acc >= read(address)) {
 			sr |= 0b00000001;
 		}
 
-		if (acc == bus->read(address)) {
+		if (acc == read(address)) {
 			sr |= 0b00000010;
 		}
 
-		if (((y - bus->read(address))) & 1) {
+		if (((y - read(address))) & 1) {
 			sr |= 0b10000000;
 		}
 
 		break;
 	case INSTRUCTION::DEC:
-		bus->write(address, bus->read(address) - 1);
+		write(address, read(address) - 1);
 
-		if (bus->read(address) == 0) {
+		if (read(address) == 0) {
 			sr |= 0b00000010;
 		}
 
-		if ((bus->read(address) >> 7) & 1) {
+		if ((read(address) >> 7) & 1) {
 			sr |= 0b10000000;
 		}
 
@@ -533,7 +528,7 @@ void CPU6502::exec_instruction(const std::uint16_t &address)
 
 		break;
 	case INSTRUCTION::EOR:
-		acc ^= bus->read(address);
+		acc ^= read(address);
 
 		if (acc == 0) {
 			sr |= 0b00000010;
@@ -547,13 +542,13 @@ void CPU6502::exec_instruction(const std::uint16_t &address)
 
 		break;
 	case INSTRUCTION::INC:
-		bus->write(address, bus->read(address) + 1);
+		write(address, read(address) + 1);
 
-		if (bus->read(address) == 0) {
+		if (read(address) == 0) {
 			sr |= 0b00000010;
 		}
 
-		if ((bus->read(address) >> 7) & 1) {
+		if ((read(address) >> 7) & 1) {
 			sr |= 0b10000000;
 		}
 
@@ -598,7 +593,7 @@ void CPU6502::exec_instruction(const std::uint16_t &address)
 
 		break;
 	case INSTRUCTION::LDA:
-		acc = bus->read(address);
+		acc = read(address);
 
 		if (acc == 0) {
 			sr |= 0b00000010;
@@ -612,7 +607,7 @@ void CPU6502::exec_instruction(const std::uint16_t &address)
 
 		break;
 	case INSTRUCTION::LDX:
-		x = bus->read(address);
+		x = read(address);
 
 		if (x == 0) {
 			sr |= 0b00000010;
@@ -626,7 +621,7 @@ void CPU6502::exec_instruction(const std::uint16_t &address)
 
 		break;
 	case INSTRUCTION::LDY:
-		y = bus->read(address);
+		y = read(address);
 
 		if (y == 0) {
 			sr |= 0b00000010;
@@ -647,7 +642,7 @@ void CPU6502::exec_instruction(const std::uint16_t &address)
 
 		break;
 	case INSTRUCTION::ORA:
-		acc |= bus->read(address);
+		acc |= read(address);
 
 		if (acc == 0) {
 			sr |= 0b00000010;
@@ -723,17 +718,17 @@ void CPU6502::exec_instruction(const std::uint16_t &address)
 
 		break;
 	case INSTRUCTION::STA:
-		bus->write(address, acc);
+		write(address, acc);
 		pc++;
 
 		break;
 	case INSTRUCTION::STX:
-		bus->write(address, x);
+		write(address, x);
 		pc++;
 
 		break;
 	case INSTRUCTION::STY:
-		bus->write(address, y);
+		write(address, y);
 		pc++;
 
 		break;
@@ -837,8 +832,13 @@ void CPU6502::nes_init_regs()
 void CPU6502::clock_cycle()
 {
 	if (cycles == 0) {
+		opcode = read(pc);
+		pc++;
 
+		cycles = instr_matrix[opcode].cycles;
 	}
+
+	cycles--;
 }
 
 std::uint8_t CPU6502::read(const std::uint16_t &addr)
