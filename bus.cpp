@@ -5,6 +5,11 @@ Bus::Bus()
 
 }
 
+void Bus::init_mem()
+{
+	std::fill(mem->begin(), mem->end(), 0x00);
+}
+
 std::uint8_t Bus::read(const std::uint16_t &addr)
 {
 	return (*mem)[addr];

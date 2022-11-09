@@ -11,6 +11,7 @@ class Bus
 {
 public:
 	Bus();
+	void init_mem();
 	std::uint8_t read(const std::uint16_t &addr);
 	void write(const std::uint16_t &addr, const std::uint8_t &data);
 	virtual ~Bus();

@@ -24,19 +24,13 @@ class CPU6502
 {
 public:
 	CPU6502();
-	void fetch_fullinstruction(const std::uint8_t &op_code);
-	void decode_instruction(const std::uint16_t &operand);
-	void exec_instruction(const std::uint16_t &address);
-	void clear();
+	std::uint8_t fetch();
+	void execute();
+	void reset();
+	bool complete();
 	virtual ~CPU6502();
 
 	void set_bus(const std::shared_ptr<Bus> &bus);
-	std::uint8_t fetch();
-
-	std::uint8_t read(const std::uint16_t &addr);
-	void write(const std::uint16_t &addr, const std::uint8_t &data);
-
-	void clock_cycle();
 
 private:
 	/* registers: accumulator, x, y, stack pointer, status register, program counter

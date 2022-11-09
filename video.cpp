@@ -2,34 +2,34 @@
 
 Video::Video()
 {
-	std::fill(memory.begin(), memory.end(), 0x00);
+
 }
 
 bool Video::init()
 {
-	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
-		std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
-		return false;
-	}
+	window.create(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "cnesemu");
+	window.setFramerateLimit(60);
 
-	this->win = SDL_CreateWindow("cnesemu", 100, 100, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
-	if (this->win == nullptr) {
-		std::cerr << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
-		return false;
-	}
+	while (window.isOpen()) {
+		sf::Event e;
 
-	this->renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
-	if (this->renderer == nullptr) {
-		std::cerr << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
-		return false;
+		while (window.pollEvent(e)) {
+			if (e.type == sf::Event::Closed) {
+				window.close();
+			}
+		}
+		window.display();
 	}
 
 	return true;
 }
 
+void Video::update()
+{
+
+}
+
 Video::~Video()
 {
-	SDL_DestroyRenderer(this->renderer);
-	SDL_DestroyWindow(this->win);
-	SDL_Quit();
+
 }

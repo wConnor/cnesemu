@@ -5,6 +5,7 @@ NES::NES()
 	cpu = std::make_unique<CPU6502>();
 	bus = std::make_shared<Bus>();
 	mem = std::make_shared<std::array<std::uint8_t, MEM_SIZE>>();
+	video = std::make_unique<Video>();
 }
 
 void NES::insert_cartridge(const std::filesystem::path &rom)
@@ -24,14 +25,24 @@ void NES::power_on()
 {
 	rom_contents = cartridge->load();
 	spdlog::debug("Loaded ROM of size {0:d} bytes.", rom_contents->size());
-	std::fill(mem->begin(), mem->end(), 0x00);
 	bus->set_mem(mem);
+	bus->init_mem();
+
 	cpu->set_bus(bus);
+	cpu->reset();
+
+	mem = rom_contents; // ought to be changed.
+
+	do {
+		cpu->execute();
+	} while (true);
+	//	} while (!cpu->complete());
+
+	// video->init();
 }
 
 void NES::power_off()
 {
-	cpu->clear();
 	//video->clear();
 	//...
 	spdlog::debug("NES powered off.");

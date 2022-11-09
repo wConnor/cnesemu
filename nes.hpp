@@ -23,7 +23,7 @@ private:
 	std::unique_ptr<Video> video;
 
 	std::shared_ptr<Bus> bus;
-	std::shared_ptr<std::vector<std::uint8_t>> rom_contents;
+	std::shared_ptr<std::array<std::uint8_t, MAX_CARTRIDGE_SIZE>> rom_contents;
 	std::shared_ptr<std::array<std::uint8_t, MEM_SIZE>> mem;
 };
 

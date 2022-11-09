@@ -5,10 +5,16 @@ Cartridge::Cartridge(const std::filesystem::path &rom)
 	this->loaded_cartridge = rom;
 }
 
-std::shared_ptr<std::vector<std::uint8_t>> Cartridge::load()
+std::shared_ptr<std::array<std::uint8_t, MAX_CARTRIDGE_SIZE>> Cartridge::load()
 {
 	std::ifstream file(this->loaded_cartridge, std::ios::in | std::ios::binary);
-	auto contents = std::make_shared<std::vector<std::uint8_t>>((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+	auto contents = std::make_shared<std::array<std::uint8_t, MAX_CARTRIDGE_SIZE>>();
+
+	while (file.good()) {
+		for (int i = 0; i != MAX_CARTRIDGE_SIZE; ++i) {
+			file >> (*contents)[i];
+		}
+	}
 
 	return contents;
 }

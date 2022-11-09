@@ -1,15 +1,11 @@
 #ifndef VIDEO_HPP
 #define VIDEO_HPP
 
+#include <SFML/Window.hpp>
+
 #include <iostream>
 #include <memory>
 #include <array>
-
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_pixels.h>
-#include <SDL2/SDL_render.h>
-#include <SDL2/SDL_stdinc.h>
-#include <SDL2/SDL_surface.h>
 
 constexpr std::uint16_t SCREEN_WIDTH = 256;
 constexpr std::uint16_t SCREEN_HEIGHT = 240;
@@ -27,9 +23,7 @@ public:
 	void update();
 
 private:
-	std::array <std::uint8_t, SCREEN_WIDTH * SCREEN_HEIGHT> memory;
-	SDL_Window *win;
-	SDL_Renderer *renderer;
+	sf::Window window;
 };
 
 #endif
