@@ -27,14 +27,6 @@ void NES::power_on()
 	std::fill(mem->begin(), mem->end(), 0x00);
 	bus->set_mem(mem);
 	cpu->set_bus(bus);
-
-	// random test instructions
-	cpu->fetch_fullinstruction(0x7D);
-	cpu->decode_instruction(0xAA);
-
-	cpu->decode_instruction(0x0A3D);
-	cpu->decode_instruction(0x007E);
-	cpu->decode_instruction(0xBC8C);
 }
 
 void NES::power_off()

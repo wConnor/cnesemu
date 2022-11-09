@@ -5,23 +5,6 @@ CPU6502::CPU6502()
 
 }
 
-void CPU6502::fetch_fullinstruction(const std::uint8_t &op_code)
-{
-	// searches for the instruction in the opcode matrix by its hexcode.
-	this->current_instruction = instr_matrix[op_code];
-}
-
-void CPU6502::decode_instruction(const std::uint16_t &operand)
-{
-
-}
-
-void CPU6502::exec_instruction(const std::uint16_t &address)
-{
-	spdlog::debug("opcode=0x{:02x}, operand=0x{:04x}", current_instruction.opcode, address);
-	spdlog::debug("pc=0x{:04x}, acc=0x{:02x}, x=0x{:02x}, y=0x{:02x}, sp=0x{:02x}, sr=0b{:08b}", pc, acc, x, y, sp, sr);
-}
-
 void CPU6502::clear()
 {
 	acc = x = y = sp = sr = 0x00;
@@ -199,7 +182,7 @@ std::uint8_t CPU6502::ADC()
 		sr |= 0b10000000;
 	}
 
-	return 0;
+	return 1;
 }
 
 std::uint8_t CPU6502::AND()
