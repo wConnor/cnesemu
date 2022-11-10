@@ -1,10 +1,10 @@
-#ifndef FULL_INSTRUCTION_HPP
-#define FULL_INSTRUCTION_HPP
+#ifndef INSTRUCTION_HPP
+#define INSTRUCTION_HPP
 
 #include <cstdint>
 #include <string>
 
-struct FULLINSTRUCTION {
+struct INSTRUCTION {
 	std::uint8_t opcode;
 	std::string instr;
 	std::string addr_mode;

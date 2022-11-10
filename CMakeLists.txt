@@ -28,7 +28,7 @@ set(PROJECT_SOURCES
   video.hpp
   video.cpp
 
-  fullinstruction.hpp
+  instruction.hpp
   )
 
 find_package(Threads REQUIRED)

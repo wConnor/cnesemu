@@ -7,10 +7,11 @@ CPU6502::CPU6502()
 
 void CPU6502::reset()
 {
-	acc = x = y = sp = sr = 0x00;
+	acc = x = y = sp = 0x00;
+	sr = 0b00100000;
 	addr_abs = 0x0040;
 	pc = 0xFFFC;
-	//	bus->init_mem();
+	bus->init_mem();
 	stack = std::stack<std::uint8_t>();
 	cycles_left = 8;
 	spdlog::debug("CPU reset.");
