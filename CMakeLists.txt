@@ -31,6 +31,12 @@ set(PROJECT_SOURCES
   instruction.hpp
   )
 
+add_custom_target(run
+    COMMAND ${PROJECT_NAME}
+    DEPENDS ${PROJECT_NAME}
+    WORKING_DIRECTORY ${CMAKE_PROJECT_DIR}
+)
+
 find_package(Threads REQUIRED)
 find_package(SFML COMPONENTS system window graphics audio REQUIRED)
 find_package(spdlog REQUIRED)
