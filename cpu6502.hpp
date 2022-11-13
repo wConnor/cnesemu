@@ -51,9 +51,18 @@ private:
 	std::shared_ptr<Bus> bus = nullptr;
 	std::uint8_t opcode = 0x00;
 	std::uint8_t fetched = 0x00;
-	std::uint16_t addr_abs = 0x0000;
+	std::uint16_t addr_abs = 0x0040;
 	std::uint16_t addr_rel = 0x0000;
-	std::uint8_t cycles_left = 0;
+	std::uint8_t cycles = 0;
+
+	std::uint8_t read_byte(const std::uint16_t &addr);
+	void write_byte(const std::uint16_t &addr, const std::uint8_t &data);
+
+	std::uint16_t read_word(const std::uint16_t &addr);
+	void write_word(const std::uint16_t &addr, const std::uint16_t &data);
+
+	std::uint8_t fetch_byte();
+	std::uint16_t fetch_word();
 
 	std::unordered_map<std::string, std::function<std::uint8_t()>> addr_mode_map = {
 		{ "ABS", std::bind(&CPU6502::ABS, this) }, // absolute

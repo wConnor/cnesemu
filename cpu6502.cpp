@@ -7,23 +7,24 @@ CPU6502::CPU6502()
 
 void CPU6502::reset()
 {
-	acc = x = y = sp = 0x00;
+	acc = x = y = 0x00;
 	sr = 0b00100000;
 	addr_abs = 0x0040;
 	pc = 0xFFFC;
+	sp = 0xFF; // sp not used due to std::stack; should change for accuracy sake.
 	bus->init_mem();
 	stack = std::stack<std::uint8_t>();
-	cycles_left = 8;
+	cycles = 8;
 	spdlog::debug("CPU reset.");
 }
 
 void CPU6502::execute()
 {
-	if (cycles_left == 0) {
-		opcode = bus->read(pc);
+	if (cycles == 0) {
+		opcode = fetch_byte();
 		pc++;
 
-		cycles_left = instr_matrix[opcode].cycles +
+		cycles = instr_matrix[opcode].cycles +
 			addr_mode_map[instr_matrix[opcode].addr_mode]() +
 			instr_map[instr_matrix[opcode].instr]();
 
@@ -31,12 +32,12 @@ void CPU6502::execute()
 					  opcode, instr_matrix[opcode].instr, instr_matrix[opcode].addr_mode, pc, acc, x, y, sp, sr);
 	}
 
-	cycles_left--; // cycle elapsed
+	cycles--; // cycle elapsed
 }
 
 bool CPU6502::complete()
 {
-	return cycles_left == 0;
+	return cycles == 0;
 }
 
 void CPU6502::set_bus(const std::shared_ptr<Bus> &bus)
@@ -47,19 +48,16 @@ void CPU6502::set_bus(const std::shared_ptr<Bus> &bus)
 /* **** ADDRESSING MODES **** */
 std::uint8_t CPU6502::ABS()
 {
-	std::uint8_t lo = bus->read(pc++);
-	std::uint8_t hi = bus->read(pc++);
-
-	addr_abs = (hi << 8) | lo;
+	addr_abs = bus->read_word(pc);
+	pc+= 2;
 
 	return 0;
 }
 
 std::uint8_t CPU6502::ABX()
 {
-	std::uint8_t lo = bus->read(pc++);
-	std::uint8_t hi = bus->read(pc++);
-	addr_abs = ((hi << 8) | lo) + x;
+	addr_abs = bus->read_word(pc) + x;
+	pc += 2;
 
 	// checks for page boundary crossing; additional cycle if so.
 	return (addr_abs & 0xFF00) != (hi << 8)
@@ -69,9 +67,8 @@ std::uint8_t CPU6502::ABX()
 
 std::uint8_t CPU6502::ABY()
 {
-	std::uint8_t lo = bus->read(pc++);
-	std::uint8_t hi = bus->read(pc++);
-	addr_abs = ((hi << 8) | lo) + y;
+	addr_abs = bus->read_word(pc) + y;
+	pc+= 2;
 
 	// checks for page boundary crossing; additional cycle if so.
 	return (addr_abs & 0xFF00) != (hi << 8)
@@ -87,8 +84,8 @@ std::uint8_t CPU6502::ACC()
 
 std::uint8_t CPU6502::IND()
 {
-	std::uint16_t lo_ptr = bus->read(pc++);
-	std::uint16_t hi_ptr = bus->read(pc++);
+	std::uint16_t lo_ptr = bus->read_word(pc++);
+	std::uint16_t hi_ptr = bus->read_word(pc++);
 
 	std::uint16_t ptr = (hi_ptr << 8) | lo_ptr;
 	addr_abs = (bus->read(ptr + 1) << 8) | bus->read(ptr);
@@ -98,7 +95,9 @@ std::uint8_t CPU6502::IND()
 
 std::uint8_t CPU6502::IZX()
 {
-	std::uint16_t t = bus->read(pc++);
+	std::uint16_t t = bus->read_word(pc);
+
+	pc++;
 
 	std::uint16_t lo = bus->read((t + x) & 0x00FF);
 	std::uint16_t hi = bus->read((t + x + 1) & 0x00FF);
@@ -215,12 +214,12 @@ std::uint8_t CPU6502::ASL()
 std::uint8_t CPU6502::BCC()
 {
 	if ((sr & 0b00000001) == 0) {
-		cycles_left++;
+		cycles++;
 		addr_abs = addr_rel + pc;
 
 		// checks for page boundary crossing, adding an additional cycle.
 		if ((addr_abs & 0xFF00) != (pc & 0xFF00)) {
-			cycles_left++;
+			cycles++;
 		}
 
 		pc = addr_abs;
@@ -232,12 +231,12 @@ std::uint8_t CPU6502::BCC()
 std::uint8_t CPU6502::BCS()
 {
 	if ((sr & 0b00000001) != 0) {
-		cycles_left++;
+		cycles++;
 		addr_abs = addr_rel + pc;
 
 		// checks for page boundary crossing, adding an additional cycle.
 		if ((addr_abs & 0xFF00) != (pc & 0xFF00)) {
-			cycles_left++;
+			cycles++;
 		}
 
 		pc = addr_abs;
@@ -249,12 +248,12 @@ std::uint8_t CPU6502::BCS()
 std::uint8_t CPU6502::BEQ()
 {
 	if ((sr & 0b00000010) != 0) {
-		cycles_left++;
+		cycles++;
 		addr_abs = addr_rel + pc;
 
 		// checks for page boundary crossing, adding an additional cycle.
 		if ((addr_abs & 0xFF00) != (pc & 0xFF00)) {
-			cycles_left++;
+			cycles++;
 		}
 
 		pc = addr_abs;
@@ -273,12 +272,12 @@ std::uint8_t CPU6502::BIT()
 std::uint8_t CPU6502::BMI()
 {
 	if ((sr & 0b1000000) != 0) {
-		cycles_left++;
+		cycles++;
 		addr_abs = addr_rel + pc;
 
 		// checks for page boundary crossing, adding an additional cycle.
 		if ((addr_abs & 0xFF00) != (pc & 0xFF00)) {
-			cycles_left++;
+			cycles++;
 		}
 
 		pc = addr_abs;
@@ -290,12 +289,12 @@ std::uint8_t CPU6502::BMI()
 std::uint8_t CPU6502::BNE()
 {
 	if ((sr & 0b00000010) == 0) {
-		cycles_left++;
+		cycles++;
 		addr_abs = addr_rel + pc;
 
 		// checks for page boundary crossing, adding an additional cycle.
 		if ((addr_abs & 0xFF00) != (pc & 0xFF00)) {
-			cycles_left++;
+			cycles++;
 		}
 
 		pc = addr_abs;
@@ -307,12 +306,12 @@ std::uint8_t CPU6502::BNE()
 std::uint8_t CPU6502::BPL()
 {
 	if ((sr & 0b10000000) == 0) {
-		cycles_left++;
+		cycles++;
 		addr_abs = addr_rel + pc;
 
 		// checks for page boundary crossing, adding an additional cycle.
 		if ((addr_abs & 0xFF00) != (pc & 0xFF00)) {
-			cycles_left++;
+			cycles++;
 		}
 
 		pc = addr_abs;
@@ -334,12 +333,12 @@ std::uint8_t CPU6502::BRK()
 std::uint8_t CPU6502::BVC()
 {
 	if ((sr & 0b01000000) == 0) {
-		cycles_left++;
+		cycles++;
 		addr_abs = addr_rel + pc;
 
 		// checks for page boundary crossing, adding an additional cycle.
 		if ((addr_abs & 0xFF00) != (pc & 0xFF00)) {
-			cycles_left++;
+			cycles++;
 		}
 
 		pc = addr_abs;
@@ -351,12 +350,12 @@ std::uint8_t CPU6502::BVC()
 std::uint8_t CPU6502::BVS()
 {
 	if ((sr & 0b01000000) != 0) {
-		cycles_left++;
+		cycles++;
 		addr_abs = addr_rel + pc;
 
 		// checks for page boundary crossing, adding an additional cycle.
 		if ((addr_abs & 0xFF00) != (pc & 0xFF00)) {
-			cycles_left++;
+			cycles++;
 		}
 
 		pc = addr_abs;
@@ -813,10 +812,50 @@ std::uint8_t CPU6502::ILL()
 std::uint8_t CPU6502::fetch()
 {
 	if (instr_matrix[opcode].addr_mode != "IMP") {
-		fetched = bus->read(addr_abs);
+		fetched = bus->read_byte(addr_abs);
 	}
 
 	return fetched;
+}
+
+std::uint8_t read_byte(const std::uint16_t &addr)
+{
+	std::uint8_t data = bus->read_byte(addr);
+	cycles--;
+	return data;
+}
+
+void write_byte(const std::uint16_t &addr, const std::uint8_t &data)
+{
+	bus->write_byte(addr, data);
+}
+
+std::uint16_t read_word(const std::uint16_t &addr)
+{
+	std::uint16_t data = bus->read_word(addr);
+	cycles -= 2;
+	return data;
+}
+
+void write_word(const std::uint16_t &addr, const std::uint16_t &data)
+{
+	bus->write_word(addr, data);
+}
+
+std::uint8_t fetch_byte()
+{
+	std::uint8_t data = this->read_byte(pc);
+	pc++;
+	return data;
+}
+
+std::uint16_t fetch_word()
+{
+	std::uint16_t data = this->read_word(pc);
+	pc += 2;
+	return data;
+
+	return this->read_word(pc);
 }
 
 CPU6502::~CPU6502()
