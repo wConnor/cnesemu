@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
+enable_testing()
+
 set(PROJECT_NAME cnesemu)
 
 project(${PROJECT_NAME} VERSION 0.1)
@@ -29,6 +31,8 @@ set(PROJECT_SOURCES
   video.cpp
 
   instruction.hpp
+
+  tests/basic_cpu_test.cpp
   )
 
 add_custom_target(run
@@ -40,5 +44,7 @@ add_custom_target(run
 find_package(Threads REQUIRED)
 find_package(SFML COMPONENTS system window graphics audio REQUIRED)
 find_package(spdlog REQUIRED)
+find_package(GTest REQUIRED)
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
-target_link_libraries(${PROJECT_NAME} sfml-graphics sfml-audio Threads::Threads spdlog::spdlog_header_only)
+target_link_libraries(${PROJECT_NAME} sfml-graphics sfml-audio Threads::Threads spdlog::spdlog_header_only GTest::gtest_main)
+

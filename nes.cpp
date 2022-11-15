@@ -23,17 +23,21 @@ void NES::eject_cartridge()
 
 void NES::power_on()
 {
-	rom_contents = cartridge->load();
-	spdlog::debug("Loaded ROM of size {0:d} bytes.", rom_contents->size());
+	// rom_contents = cartridge->load();
+	// spdlog::debug("Loaded ROM of size {0:d} bytes.", rom_contents->size());
 
-	bus->set_mem(this->rom_contents);
+	bus->set_mem(this->mem);
 	cpu->set_bus(this->bus);
 	cpu->reset();
+	(*mem)[0xFFFC] = 0xA9;
+	(*mem)[0xFFFD] = 0x49;
 
-	do {
+	(*mem)[0xFFFE] = 0xA2;
+	(*mem)[0xFFFF] = 0x03;
+
+	while (true) {
 		cpu->execute();
-	} while (true);
-	//	} while (!cpu->complete());
+	}
 
 	// video->init();
 }

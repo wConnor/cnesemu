@@ -10,9 +10,8 @@ void CPU6502::reset()
 	acc = x = y = 0x00;
 	sr = 0b00100000;
 	addr_abs = 0x0040;
-	pc = 0x0000;
+	pc = 0xFFFC;
 	sp = 0xFF; // sp not used due to std::stack; should change for accuracy sake.
-	//	bus->init_mem();
 	stack = std::stack<std::uint8_t>();
 	cycles = 8;
 	spdlog::debug("CPU reset.");
