@@ -42,7 +42,7 @@ private:
 	std::uint8_t y = 0x00;
 	std::uint8_t sp = 0x00;
 	std::uint8_t sr = 0b00100000;
-	std::uint16_t pc = 0xFFFC;
+	std::uint16_t pc = 0x0000;
 
 	std::stack<std::uint8_t> stack;
 

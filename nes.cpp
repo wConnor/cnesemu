@@ -26,9 +26,7 @@ void NES::power_on()
 	rom_contents = cartridge->load();
 	spdlog::debug("Loaded ROM of size {0:d} bytes.", rom_contents->size());
 
-	bus->set_mem(this->mem);
-	bus->init_mem();
-
+	bus->set_mem(this->rom_contents);
 	cpu->set_bus(this->bus);
 	cpu->reset();
 

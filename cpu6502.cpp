@@ -10,9 +10,9 @@ void CPU6502::reset()
 	acc = x = y = 0x00;
 	sr = 0b00100000;
 	addr_abs = 0x0040;
-	pc = 0xFFFC;
+	pc = 0x0000;
 	sp = 0xFF; // sp not used due to std::stack; should change for accuracy sake.
-	bus->init_mem();
+	//	bus->init_mem();
 	stack = std::stack<std::uint8_t>();
 	cycles = 8;
 	spdlog::debug("CPU reset.");
@@ -21,8 +21,7 @@ void CPU6502::reset()
 void CPU6502::execute()
 {
 	if (cycles == 0) {
-		opcode = fetch_byte();
-		pc++;
+		opcode = this->fetch_byte();
 
 		cycles = instr_matrix[opcode].cycles +
 			addr_mode_map[instr_matrix[opcode].addr_mode]() +
@@ -32,7 +31,54 @@ void CPU6502::execute()
 					  opcode, instr_matrix[opcode].instr, instr_matrix[opcode].addr_mode, pc, acc, x, y, sp, sr);
 	}
 
-	cycles--; // cycle elapsed
+	cycles--;
+}
+
+std::uint8_t CPU6502::fetch()
+{
+	if (instr_matrix[opcode].addr_mode != "IMP") {
+		fetched = bus->read_byte(addr_abs);
+	}
+
+	return fetched;
+}
+
+std::uint8_t CPU6502::read_byte(const std::uint16_t &addr)
+{
+	std::uint8_t data = bus->read_byte(addr);
+	cycles--;
+	return data;
+}
+
+void CPU6502::write_byte(const std::uint16_t &addr, const std::uint8_t &data)
+{
+	bus->write_byte(addr, data);
+}
+
+std::uint16_t CPU6502::read_word(const std::uint16_t &addr)
+{
+	std::uint16_t data = bus->read_word(addr);
+	cycles -= 2;
+	return data;
+}
+
+void CPU6502::write_word(const std::uint16_t &addr, const std::uint16_t &data)
+{
+	bus->write_word(addr, data);
+}
+
+std::uint8_t CPU6502::fetch_byte()
+{
+	std::uint8_t data = this->read_byte(pc);
+	pc++;
+	return data;
+}
+
+std::uint16_t CPU6502::fetch_word()
+{
+	std::uint16_t data = this->read_word(pc);
+	pc += 2;
+	return data;
 }
 
 bool CPU6502::complete()
@@ -48,32 +94,30 @@ void CPU6502::set_bus(const std::shared_ptr<Bus> &bus)
 /* **** ADDRESSING MODES **** */
 std::uint8_t CPU6502::ABS()
 {
-	addr_abs = bus->read_word(pc);
-	pc+= 2;
-
+	addr_abs = this->fetch_word();
 	return 0;
 }
 
 std::uint8_t CPU6502::ABX()
 {
-	addr_abs = bus->read_word(pc) + x;
-	pc += 2;
+	addr_abs = this->fetch_word() + x;
 
 	// checks for page boundary crossing; additional cycle if so.
-	return (addr_abs & 0xFF00) != (hi << 8)
-		? 1
-		: 0;
+	// return (addr_abs & 0xFF00) != (hi << 8)
+	//	? 1
+	//	: 0;
+	return 0;
 }
 
 std::uint8_t CPU6502::ABY()
 {
-	addr_abs = bus->read_word(pc) + y;
-	pc+= 2;
+	addr_abs = this->fetch_word() + y;
 
 	// checks for page boundary crossing; additional cycle if so.
-	return (addr_abs & 0xFF00) != (hi << 8)
-		? 1
-		: 0;
+	// return (addr_abs & 0xFF00) != (hi << 8)
+	//	? 1
+	//	: 0;
+	return 0;
 }
 
 std::uint8_t CPU6502::ACC()
@@ -84,35 +128,34 @@ std::uint8_t CPU6502::ACC()
 
 std::uint8_t CPU6502::IND()
 {
-	std::uint16_t lo_ptr = bus->read_word(pc++);
-	std::uint16_t hi_ptr = bus->read_word(pc++);
+	std::uint8_t lo = this->fetch_byte();
+	std::uint8_t hi = this->fetch_byte();
 
-	std::uint16_t ptr = (hi_ptr << 8) | lo_ptr;
-	addr_abs = (bus->read(ptr + 1) << 8) | bus->read(ptr);
+	addr_abs = ((hi << 8) | lo);
 
-	return 0;
+	// checks for page boundary crossing; additional cycle if so.
+	return (addr_abs & 0xFF00) != (hi << 8)
+		? 1
+		: 0;
 }
 
 std::uint8_t CPU6502::IZX()
 {
-	std::uint16_t t = bus->read_word(pc);
+	std::uint8_t lo = this->fetch_byte();
+	std::uint8_t hi = this->fetch_byte();
 
-	pc++;
+	addr_abs = ((hi << 8) | lo) + x;
 
-	std::uint16_t lo = bus->read((t + x) & 0x00FF);
-	std::uint16_t hi = bus->read((t + x + 1) & 0x00FF);
-
-	addr_abs = (hi << 8) | lo;
-
-	return 0;
+	// checks for page boundary crossing; additional cycle if so.
+	return (addr_abs & 0xFF00) != (hi << 8)
+		? 1
+		: 0;
 }
 
 std::uint8_t CPU6502::IZY()
 {
-	std::uint16_t t = bus->read(pc++);
-
-	std::uint16_t lo = bus->read(t & 0x00FF);
-	std::uint16_t hi = bus->read((t + 1) & 0x00FF);
+	std::uint8_t lo = this->fetch_byte();
+	std::uint8_t hi = this->fetch_byte();
 
 	addr_abs = ((hi << 8) | lo) + y;
 
@@ -130,34 +173,34 @@ std::uint8_t CPU6502::IMP()
 
 std::uint8_t CPU6502::IMM()
 {
-	addr_abs = pc++;
+	addr_abs = pc;
 	return 0;
 }
 
 std::uint8_t CPU6502::ZPG()
 {
-	addr_abs = bus->read(pc++);
+	addr_abs = this->fetch_word();
 	addr_abs &= 0x00FF;
 	return 0;
 }
 
 std::uint8_t CPU6502::ZPX()
 {
-	addr_abs = (bus->read(pc++) + x);
+	addr_abs = (this->fetch_word() + x);
 	addr_abs &= 0x00FF;
 	return 0;
 }
 
 std::uint8_t CPU6502::ZPY()
 {
-	addr_abs = (bus->read(pc++) + y);
+	addr_abs = (this->fetch_word() + y);
 	addr_abs &= 0x00FF;
 	return 0;
 }
 
 std::uint8_t CPU6502::REL()
 {
-	addr_rel = bus->read(pc++);
+	addr_rel = this->fetch_word();
 
 	if (addr_rel & 0x80) {
 		addr_rel |= 0xFF00;
@@ -324,7 +367,7 @@ std::uint8_t CPU6502::BRK()
 {
 	stack.push(pc);
 	stack.push(sr);
-	pc = 0xFFFE;
+	//	pc = 0xFFFE;
 	sr |= 0b00010000;
 
 	return 0;
@@ -423,7 +466,7 @@ std::uint8_t CPU6502::CPY()
 std::uint8_t CPU6502::DEC()
 {
 	fetch();
-	bus->write(addr_abs, (fetched - 1) & 0x00FF);
+	this->write_word(addr_abs, (fetched - 1) & 0x00FF);
 
 	if (fetched - 1 == 0) {
 		sr |= 0b00000010;
@@ -485,7 +528,7 @@ std::uint8_t CPU6502::EOR()
 std::uint8_t CPU6502::INC()
 {
 	fetch();
-	bus->write(addr_abs, (fetched + 1) & 0x00FF);
+	this->write_word(addr_abs, (fetched + 1) & 0x00FF);
 
 	if (fetched + 1 == 0) {
 		sr |= 0b00000010;
@@ -544,8 +587,7 @@ std::uint8_t CPU6502::JSR()
 
 std::uint8_t CPU6502::LDA()
 {
-	fetch();
-	acc = fetched;
+	acc = this->fetch_byte();
 
 	if (acc == 0) {
 		sr |= 0b00000010;
@@ -706,19 +748,19 @@ std::uint8_t CPU6502::SEI()
 
 std::uint8_t CPU6502::STA()
 {
-	bus->write(addr_abs, acc);
+	this->write_byte(addr_abs, acc);
 	return 0;
 }
 
 std::uint8_t CPU6502::STX()
 {
-	bus->write(addr_abs, x);
+	this->write_byte(addr_abs, x);
 	return 0;
 }
 
 std::uint8_t CPU6502::STY()
 {
-	bus->write(addr_abs, y);
+	this->write_byte(addr_abs, y);
 	return 0;
 }
 
@@ -807,55 +849,6 @@ std::uint8_t CPU6502::TYA()
 std::uint8_t CPU6502::ILL()
 {
 	return 0;
-}
-
-std::uint8_t CPU6502::fetch()
-{
-	if (instr_matrix[opcode].addr_mode != "IMP") {
-		fetched = bus->read_byte(addr_abs);
-	}
-
-	return fetched;
-}
-
-std::uint8_t read_byte(const std::uint16_t &addr)
-{
-	std::uint8_t data = bus->read_byte(addr);
-	cycles--;
-	return data;
-}
-
-void write_byte(const std::uint16_t &addr, const std::uint8_t &data)
-{
-	bus->write_byte(addr, data);
-}
-
-std::uint16_t read_word(const std::uint16_t &addr)
-{
-	std::uint16_t data = bus->read_word(addr);
-	cycles -= 2;
-	return data;
-}
-
-void write_word(const std::uint16_t &addr, const std::uint16_t &data)
-{
-	bus->write_word(addr, data);
-}
-
-std::uint8_t fetch_byte()
-{
-	std::uint8_t data = this->read_byte(pc);
-	pc++;
-	return data;
-}
-
-std::uint16_t fetch_word()
-{
-	std::uint16_t data = this->read_word(pc);
-	pc += 2;
-	return data;
-
-	return this->read_word(pc);
 }
 
 CPU6502::~CPU6502()
