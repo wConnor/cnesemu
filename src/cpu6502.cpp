@@ -1,4 +1,6 @@
 #include "cpu6502.hpp"
+#include <chrono>
+#include <thread>
 
 CPU6502::CPU6502()
 {
@@ -9,14 +11,14 @@ void CPU6502::reset()
 {
 	acc = x = y = 0x00;
 	sr = 0b00100000;
-	addr_abs = 0x0040;
+	addr_abs = 0x0000;
 	pc = 0xFFFC;
 	pc = (fetch_byte() << 8) | fetch_byte();
 	sp = 0xFF; // sp not used due to std::stack; should change for accuracy sake.
 	stack = std::stack<std::uint8_t>();
 
-	spdlog::debug("CPU reset.");
-	cycles = 7;
+	spdlog::debug("CPU reset. pc=0x{:04x}", pc);
+	cycles = 8;
 }
 
 void CPU6502::execute()
@@ -32,6 +34,7 @@ void CPU6502::execute()
 					  opcode, instr_matrix[opcode].instr, instr_matrix[opcode].addr_mode, pc, acc, x, y, sp, sr);
 	}
 
+	std::this_thread::sleep_for(std::chrono::milliseconds(55));
 	cycles--;
 }
 
@@ -101,59 +104,18 @@ std::uint8_t CPU6502::ABS()
 
 std::uint8_t CPU6502::ABX()
 {
-	addr_abs = this->fetch_word() + x;
+	std::uint8_t lo = this->fetch_byte();
+	std::uint8_t hi = this->fetch_byte();
+
+	addr_abs = ((hi << 8) | lo) + y;
 
 	// checks for page boundary crossing; additional cycle if so.
-	// return (addr_abs & 0xFF00) != (hi << 8)
-	//	? 1
-	//	: 0;
-	return 0;
+	return (addr_abs & 0xFF00) != (hi << 8)
+		? 1
+		: 0;
 }
 
 std::uint8_t CPU6502::ABY()
-{
-	addr_abs = this->fetch_word() + y;
-
-	// checks for page boundary crossing; additional cycle if so.
-	// return (addr_abs & 0xFF00) != (hi << 8)
-	//	? 1
-	//	: 0;
-	return 0;
-}
-
-std::uint8_t CPU6502::ACC()
-{
-	fetched = acc;
-	return 0;
-}
-
-std::uint8_t CPU6502::IND()
-{
-	std::uint8_t lo = this->fetch_byte();
-	std::uint8_t hi = this->fetch_byte();
-
-	addr_abs = ((hi << 8) | lo);
-
-	// checks for page boundary crossing; additional cycle if so.
-	return (addr_abs & 0xFF00) != (hi << 8)
-		? 1
-		: 0;
-}
-
-std::uint8_t CPU6502::IZX()
-{
-	std::uint8_t lo = this->fetch_byte();
-	std::uint8_t hi = this->fetch_byte();
-
-	addr_abs = ((hi << 8) | lo) + x;
-
-	// checks for page boundary crossing; additional cycle if so.
-	return (addr_abs & 0xFF00) != (hi << 8)
-		? 1
-		: 0;
-}
-
-std::uint8_t CPU6502::IZY()
 {
 	std::uint8_t lo = this->fetch_byte();
 	std::uint8_t hi = this->fetch_byte();
@@ -166,15 +128,59 @@ std::uint8_t CPU6502::IZY()
 		: 0;
 }
 
-std::uint8_t CPU6502::IMP()
+std::uint8_t CPU6502::ACC()
 {
 	fetched = acc;
+	return 0;
+}
+
+std::uint8_t CPU6502::IND()
+{
+	std::uint8_t lo_ptr = this->fetch_byte();
+	std::uint8_t hi_ptr = this->fetch_byte();
+
+	std::uint16_t ptr = (hi_ptr << 8) | lo_ptr;
+
+	addr_abs = lo_ptr == 0x00FF
+		? (this->read_byte(ptr & 0xFF00) << 8) | this->read_byte(ptr)
+		: (this->read_byte(ptr + 1) << 8) | this->read_byte(ptr);
+
+	return 0;
+}
+
+std::uint8_t CPU6502::IZX()
+{
+	std::uint8_t tmp = this->fetch_byte();
+
+	std::uint8_t lo = this->read_byte((tmp + x) & 0x00FF);
+	std::uint8_t hi = this->read_byte((tmp + x + 1) & 0x00FF);
+
+	addr_abs = (hi << 8) | lo;
+
+	return 0;
+}
+
+std::uint8_t CPU6502::IZY()
+{
+	std::uint8_t tmp = this->fetch_byte();
+
+	std::uint8_t lo = this->read_byte((tmp + y) & 0x00FF);
+	std::uint8_t hi = this->read_byte((tmp + y + 1) & 0x00FF);
+
+	addr_abs = (hi << 8) | lo;
+
+	return 0;
+}
+
+std::uint8_t CPU6502::IMP()
+{
 	return 0;
 }
 
 std::uint8_t CPU6502::IMM()
 {
 	addr_abs = pc;
+	pc++;
 	return 0;
 }
 
@@ -224,7 +230,7 @@ std::uint8_t CPU6502::ADC()
 		sr |= 0b00000010;
 	}
 
-	if ((acc >> 7) & 1) {
+	if ((acc & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
 
@@ -240,7 +246,7 @@ std::uint8_t CPU6502::AND()
 		sr |= 0b00000010;
 	}
 
-	if ((acc >> 7) & 1) {
+	if ((acc & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
 
@@ -368,11 +374,13 @@ std::uint8_t CPU6502::BRK()
 {
 	stack.push(pc);
 	stack.push(sr);
-	//	pc = 0xFFFE;
+	pc = 0xFFFE;
+	pc = (fetch_byte() << 8) | fetch_byte();
 	sr |= 0b00010000;
 
 	return 0;
 }
+
 
 std::uint8_t CPU6502::BVC()
 {
@@ -449,7 +457,7 @@ std::uint8_t CPU6502::CPX()
 std::uint8_t CPU6502::CPY()
 {
 	fetch();
-	if (acc >= fetched) {
+	if (y >= fetched) {
 		sr |= 0b00000001;
 	}
 
@@ -473,7 +481,7 @@ std::uint8_t CPU6502::DEC()
 		sr |= 0b00000010;
 	}
 
-	if (((fetched - 1) >> 7) & 1) {
+	if (((fetched - 1) & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
 
@@ -488,7 +496,7 @@ std::uint8_t CPU6502::DEX()
 		sr |= 0b00000010;
 	}
 
-	if ((x >> 7) & 1) {
+	if ((x & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
 
@@ -503,7 +511,7 @@ std::uint8_t CPU6502::DEY()
 		sr |= 0b00000010;
 	}
 
-	if ((y >> 7) & 1) {
+	if ((y & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
 
@@ -519,7 +527,7 @@ std::uint8_t CPU6502::EOR()
 		sr |= 0b00000010;
 	}
 
-	if ((acc >> 7) & 1) {
+	if ((acc & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
 
@@ -529,13 +537,13 @@ std::uint8_t CPU6502::EOR()
 std::uint8_t CPU6502::INC()
 {
 	fetch();
-	this->write_word(addr_abs, (fetched + 1) & 0x00FF);
+	this->write_word(addr_abs, fetched + 1);
 
 	if (fetched + 1 == 0) {
 		sr |= 0b00000010;
 	}
 
-	if (((fetched + 1) >> 7) & 1) {
+	if (((fetched + 1) & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
 
@@ -550,7 +558,7 @@ std::uint8_t CPU6502::INX()
 		sr |= 0b00000010;
 	}
 
-	if ((x >> 7) & 1) {
+	if ((x & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
 
@@ -565,7 +573,7 @@ std::uint8_t CPU6502::INY()
 		sr |= 0b00000010;
 	}
 
-	if ((y >> 7) & 1) {
+	if ((y & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
 
@@ -588,13 +596,14 @@ std::uint8_t CPU6502::JSR()
 
 std::uint8_t CPU6502::LDA()
 {
-	acc = this->fetch_byte();
+	fetch();
+	acc = fetched;
 
 	if (acc == 0) {
 		sr |= 0b00000010;
 	}
 
-	if ((acc >> 7) & 1) {
+	if ((acc & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
 
@@ -610,7 +619,7 @@ std::uint8_t CPU6502::LDX()
 		sr |= 0b00000010;
 	}
 
-	if ((x >> 7) & 1) {
+	if ((x & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
 
@@ -626,7 +635,7 @@ std::uint8_t CPU6502::LDY()
 		sr |= 0b00000010;
 	}
 
-	if ((y >> 7) & 1) {
+	if ((y & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
 
@@ -654,7 +663,7 @@ std::uint8_t CPU6502::ORA()
 		sr |= 0b00000010;
 	}
 
-	if ((acc >> 7) & 1) {
+	if ((acc & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
 
@@ -682,7 +691,7 @@ std::uint8_t CPU6502::PLA()
 		sr |= 0b00000010;
 	}
 
-	if ((acc >> 7) & 1) {
+	if ((acc & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
 
@@ -719,6 +728,7 @@ std::uint8_t CPU6502::RTS()
 {
 	pc = stack.top();
 	stack.pop();
+	pc++;
 	return 0;
 }
 
@@ -773,7 +783,7 @@ std::uint8_t CPU6502::TAX()
 		sr |= 0b00000010;
 	}
 
-	if ((x >> 7) & 1) {
+	if ((x & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
 
@@ -788,7 +798,7 @@ std::uint8_t CPU6502::TAY()
 		sr |= 0b00000010;
 	}
 
-	if ((y >> 7) & 1) {
+	if ((y & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
 
@@ -803,7 +813,7 @@ std::uint8_t CPU6502::TSX()
 		sr |= 0b00000010;
 	}
 
-	if ((x >> 7) & 1) {
+	if ((x & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
 
@@ -818,7 +828,7 @@ std::uint8_t CPU6502::TXA()
 		sr |= 0b00000010;
 	}
 
-	if ((acc >> 7) & 1) {
+	if ((acc & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
 
@@ -839,17 +849,30 @@ std::uint8_t CPU6502::TYA()
 		sr |= 0b00000010;
 	}
 
-	if ((acc >> 7) & 1) {
+	if ((acc & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
 
 	return 0;
-
 }
 
 std::uint8_t CPU6502::ILL()
 {
 	return 0;
+}
+
+/* **** OTHER OPERATIONS **** */
+void CPU6502::IRQ()
+{
+	// if I flag (bit 2) is clear, interrupts are allowed.
+	if ((sr & 0b00000000) == 0) {
+
+	}
+}
+
+void CPU6502::NMI()
+{
+
 }
 
 CPU6502::~CPU6502()

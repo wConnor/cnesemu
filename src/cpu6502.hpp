@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <memory>
 #include <limits>
+#include <chrono>
 
 constexpr double CLOCK_SPEED_MHZ = 1.789773;
 constexpr std::uint8_t STACK_SIZE = 255;
@@ -51,7 +52,7 @@ private:
 	std::shared_ptr<Bus> bus = nullptr;
 	std::uint8_t opcode = 0x00;
 	std::uint8_t fetched = 0x00;
-	std::uint16_t addr_abs = 0x0040;
+	std::uint16_t addr_abs = 0x0000;
 	std::uint16_t addr_rel = 0x0000;
 	std::uint8_t cycles = 0;
 
@@ -474,6 +475,10 @@ private:
 	std::uint8_t TYA();
 
 	std::uint8_t ILL(); // illegal instruction
+
+	// other operations
+	void IRQ();
+	void NMI();
 };
 
 #endif

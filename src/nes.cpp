@@ -29,11 +29,6 @@ void NES::power_on()
 	bus->set_mem(this->mem);
 	cpu->set_bus(this->bus);
 	cpu->reset();
-	(*mem)[0xFFFC] = 0xA9;
-	(*mem)[0xFFFD] = 0x49;
-
-	(*mem)[0xFFFE] = 0xA2;
-	(*mem)[0xFFFF] = 0x03;
 
 	while (true) {
 		cpu->execute();
