@@ -1,5 +1,7 @@
 set(PROJECT_NAME_TEST ${CMAKE_PROJECT_NAME}_test)
 
+set(CMAKE_OUTPUT_ON_FAILURE TRUE)
+
 set(TEST_SOURCES
   test_main.cpp
 

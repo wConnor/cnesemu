@@ -98,7 +98,10 @@ void CPU6502::set_bus(const std::shared_ptr<Bus> &bus)
 /* **** ADDRESSING MODES **** */
 std::uint8_t CPU6502::ABS()
 {
-	addr_abs = this->fetch_word();
+	std::uint8_t lo = this->fetch_byte();
+	std::uint8_t hi = this->fetch_byte();
+	addr_abs = (hi << 8) | lo;
+
 	return 0;
 }
 
@@ -179,8 +182,7 @@ std::uint8_t CPU6502::IMP()
 
 std::uint8_t CPU6502::IMM()
 {
-	addr_abs = pc;
-	pc++;
+	addr_abs = pc++;
 	return 0;
 }
 
@@ -380,7 +382,6 @@ std::uint8_t CPU6502::BRK()
 
 	return 0;
 }
-
 
 std::uint8_t CPU6502::BVC()
 {
