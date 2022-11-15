@@ -11,10 +11,12 @@ void CPU6502::reset()
 	sr = 0b00100000;
 	addr_abs = 0x0040;
 	pc = 0xFFFC;
+	pc = (fetch_byte() << 8) | fetch_byte();
 	sp = 0xFF; // sp not used due to std::stack; should change for accuracy sake.
 	stack = std::stack<std::uint8_t>();
-	cycles = 8;
+
 	spdlog::debug("CPU reset.");
+	cycles = 7;
 }
 
 void CPU6502::execute()
