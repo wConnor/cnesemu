@@ -3,7 +3,6 @@
 #include <cstdlib>
 #include <ctime>
 #include <gtest/gtest.h>
-#include <iostream>
 
 // dirty solution, but needed to test private variables.
 #define private public
@@ -11,11 +10,14 @@
 #include "cpu6502.hpp"
 #undef private
 
+#define RAND_UINT8 std::rand() % std::numeric_limits<std::uint8_t>::max()
+
 auto cpu = std::make_unique<CPU6502>();
 auto bus = std::make_shared<Bus>();
 auto mem = std::make_shared<std::array<std::uint8_t, MEM_SIZE>>();
 
-void prepare_mem() {
+void prepare_mem()
+{
 	std::srand(std::time(nullptr)); // random seed for testing
 
 	bus->set_mem(mem); // connects the bus to the system memory.
@@ -30,7 +32,8 @@ void prepare_mem() {
 	cpu->reset();
 }
 
-TEST(basic_cpu_test, load_store) {
+TEST(basic_cpu_test, load_store)
+{
 	prepare_mem();
 
 	// ensure that reset vector jump has worked properly.
@@ -77,14 +80,15 @@ TEST(basic_cpu_test, load_store) {
 	EXPECT_EQ((*mem)[0xBBAC], cpu->y);
 }
 
-TEST(basic_cpu_test, register_transfer) {
+TEST(basic_cpu_test, register_transfer)
+{
 	prepare_mem();
 
 	// ensure that reset vector jump has worked properly.
 	EXPECT_EQ(cpu->pc, 0x0000);
 
 	// TAX IMP: transfer ACC to X register
-	cpu->acc = std::rand() % std::numeric_limits<std::uint8_t>::max();
+	cpu->acc = RAND_UINT8;
 	(*mem)[0x0000] = 0xAA;
 	while (cpu->pc != 0x0001) {
 		cpu->execute();
@@ -92,7 +96,7 @@ TEST(basic_cpu_test, register_transfer) {
 	EXPECT_EQ(cpu->acc, cpu->x);
 
 	// TAY IMP: transfer ACC to Y register
-	cpu->acc = std::rand() % std::numeric_limits<std::uint8_t>::max();
+	cpu->acc = RAND_UINT8;
 	(*mem)[0x0001] = 0xA8;
 	while (cpu->pc != 0x0002) {
 		cpu->execute();
@@ -100,7 +104,7 @@ TEST(basic_cpu_test, register_transfer) {
 	EXPECT_EQ(cpu->acc, cpu->y);
 
 	// TXA IMP: transfer X to ACC register
-	cpu->x = std::rand() % std::numeric_limits<std::uint8_t>::max();
+	cpu->x = RAND_UINT8;
 	(*mem)[0x0002] = 0x8A;
 	while (cpu->pc != 0x0003) {
 		cpu->execute();
@@ -108,7 +112,7 @@ TEST(basic_cpu_test, register_transfer) {
 	EXPECT_EQ(cpu->x, cpu->acc);
 
 	// TYA IMP: transfer Y to ACC register
-	cpu->y = std::rand() % std::numeric_limits<std::uint8_t>::max();
+	cpu->y = RAND_UINT8;
 	(*mem)[0x0003] = 0x98;
 	while (cpu->pc != 0x0004) {
 		cpu->execute();
@@ -116,29 +120,29 @@ TEST(basic_cpu_test, register_transfer) {
 	EXPECT_EQ(cpu->y, cpu->acc);
 }
 
-TEST(basic_cpu_test, stack_ops) {
+TEST(basic_cpu_test, stack_ops)
+{
 	prepare_mem();
 
 	// ensure that reset vector jump has worked properly.
 	EXPECT_EQ(cpu->pc, 0x0000);
 }
 
-TEST(basic_cpu_test, logical) {
+TEST(basic_cpu_test, logical)
+{
 	prepare_mem();
 
 	// ensure that reset vector jump has worked properly.
 	EXPECT_EQ(cpu->pc, 0x0000);
 
-	std::uint8_t temp = std::rand() % std::numeric_limits<std::uint8_t>::max();
+	std::uint8_t temp = RAND_UINT8;
 	cpu->acc = temp;
 
 	// AND ABS: logical AND performed, bit-by-bit, using the memory location.
 	(*mem)[0x0000] = 0x2D;
 	(*mem)[0x0001] = 0x33;
 	(*mem)[0x0002] = 0x44;
-	(*mem)[0x4433] =
-		std::rand() %
-		std::numeric_limits<std::uint8_t>::max(); // byte to AND w/ ACC.
+	(*mem)[0x4433] = RAND_UINT8; // byte to AND w/ ACC.
 
 	while (cpu->pc != 0x0003) {
 		cpu->execute();
@@ -149,13 +153,13 @@ TEST(basic_cpu_test, logical) {
 	EXPECT_EQ(cpu->acc & 0b10000000,
 			  (cpu->sr) & 0b10000000); // check N flag has been set correctly.
 
-	temp = std::rand() % std::numeric_limits<std::uint8_t>::max();
+	temp = RAND_UINT8;
 	cpu->acc = temp;
 
 	// EOR IMM: exclusive OR operation is performed bit-by-bit on the ACC and
 	// contents of memory.
 	(*mem)[0x0003] = 0x49;
-	(*mem)[0x0004] = 0x55;
+	(*mem)[0x0004] = RAND_UINT8;
 
 	while (cpu->pc != 0x0005) {
 		cpu->execute();
@@ -163,32 +167,135 @@ TEST(basic_cpu_test, logical) {
 
 	EXPECT_EQ(cpu->acc,
 			  temp ^ (*mem)[0x0004]); // check AND on ACC has been carried out.
-	//	EXPECT_EQ(cpu->acc & 0b10000000, (cpu->sr) & 0b10000000); // check N
-	//flag has been set correctly.
+	//	EXPECT_EQ(cpu->acc & 0b10000000,
+	//			  (cpu->sr) & 0b10000000); // check N flag has been set
+	// correctly.
+
+	temp = RAND_UINT8;
+	cpu->acc = temp;
+
+	// ORA ABS: inclusive OR operation is performed bit-by-bit on the ACC and
+	// contents of memory.
+	(*mem)[0x0005] = 0x0D;
+	(*mem)[0x0006] = 0x88;
+	(*mem)[0x0007] = 0x55;
+	(*mem)[0x5588] = RAND_UINT8;
+
+	while (cpu->pc != 0x0008) {
+		cpu->execute();
+	}
+
+	EXPECT_EQ(cpu->acc,
+			  temp | (*mem)[0x5588]); // check AND on ACC has been carried out.
+	//	EXPECT_EQ(cpu->acc & 0b10000000,
+	//			  (cpu->sr) & 0b10000000); // check N flag has been set
+	// correctly.
+
+	// BIT ABS: tests if one or more bits are set in a target memory location.
+	(*mem)[0x0008] = 0x2C;
+	(*mem)[0x0009] = 0xFA;
+	(*mem)[0x000A] = 0xAF;
+	(*mem)[0xAFFA] = RAND_UINT8;
+
+	while (cpu->pc != 0x000B) {
+		cpu->execute();
+	}
+
+	// implement BIT test first.
 }
 
-TEST(basic_cpu_test, arithmetic) {
+TEST(basic_cpu_test, arithmetic)
+{
 	prepare_mem();
 
 	// ensure that reset vector jump has worked properly.
 	EXPECT_EQ(cpu->pc, 0x0000);
 }
 
-TEST(basic_cpu_test, inc_and_dec) {
+TEST(basic_cpu_test, inc_and_dec)
+{
+	prepare_mem();
+
+	// ensure that reset vector jump has worked properly.
+	EXPECT_EQ(cpu->pc, 0x0000);
+
+	// INC ABS: adds one to the value held at a memory location.
+	std::uint8_t temp = RAND_UINT8;
+	(*mem)[0x0000] = 0xEE;
+	(*mem)[0x0001] = 0xAA;
+	(*mem)[0x0002] = 0xBB;
+	(*mem)[0xBBAA] = temp;
+
+	while (cpu->pc != 0x0003) {
+		cpu->execute();
+	}
+
+	EXPECT_EQ((*mem)[0xBBAA], temp + 1);
+
+	// INX IMP: adds one to the X register.
+	temp = cpu->x;
+	(*mem)[0x0003] = 0xE8;
+
+	while (cpu->pc != 0x0004) {
+		cpu->execute();
+	}
+
+	EXPECT_EQ(cpu->x, temp + 1);
+
+	// INY IMP: adds one to the Y register.
+	temp = cpu->y;
+	(*mem)[0x0004] = 0xC8;
+
+	while (cpu->pc != 0x0005) {
+		cpu->execute();
+	}
+
+	EXPECT_EQ(cpu->y, temp + 1);
+
+	// DEC ABS: subtracts one from the value held at a memory location.
+	temp = RAND_UINT8;
+	(*mem)[0x0005] = 0xCE;
+	(*mem)[0x0006] = 0xDE;
+	(*mem)[0x0007] = 0xED;
+	(*mem)[0xEDDE] = temp;
+
+	while (cpu->pc != 0x0008) {
+		cpu->execute();
+	}
+
+	EXPECT_EQ((*mem)[0xEDDE], temp - 1);
+
+	// DEX IMP: subtracts one from the X register.
+	temp = cpu->x;
+	(*mem)[0x0008] = 0xCA;
+
+	while (cpu->pc != 0x0009) {
+		cpu->execute();
+	}
+
+	EXPECT_EQ(cpu->x, temp - 1);
+
+	// DEY IMP: subtracts one from the Y register.
+	temp = cpu->y;
+	(*mem)[0x0009] = 0x88;
+
+	while (cpu->pc != 0x000A) {
+		cpu->execute();
+	}
+
+	EXPECT_EQ(cpu->y, temp - 1);
+}
+
+TEST(basic_cpu_test, shifts)
+{
 	prepare_mem();
 
 	// ensure that reset vector jump has worked properly.
 	EXPECT_EQ(cpu->pc, 0x0000);
 }
 
-TEST(basic_cpu_test, shifts) {
-	prepare_mem();
-
-	// ensure that reset vector jump has worked properly.
-	EXPECT_EQ(cpu->pc, 0x0000);
-}
-
-TEST(basic_cpu_test, jumps_and_calls) {
+TEST(basic_cpu_test, jumps_and_calls)
+{
 	prepare_mem();
 
 	// ensure that reset vector jump has worked properly.
@@ -210,7 +317,7 @@ TEST(basic_cpu_test, jumps_and_calls) {
 	(*mem)[0x9965] = 0xAA;
 	(*mem)[0x9966] = 0xCC;
 
-	while (cpu->pc < 0x9977) {
+	while (cpu->pc < 0x9967) {
 		cpu->execute();
 	}
 
@@ -218,14 +325,16 @@ TEST(basic_cpu_test, jumps_and_calls) {
 	// test stack
 }
 
-TEST(basic_cpu_test, branches) {
+TEST(basic_cpu_test, branches)
+{
 	prepare_mem();
 
 	// ensure that reset vector jump has worked properly.
 	EXPECT_EQ(cpu->pc, 0x0000);
 }
 
-TEST(basic_cpu_test, status_flag) {
+TEST(basic_cpu_test, status_flag)
+{
 	prepare_mem();
 
 	// ensure that reset vector jump has worked properly.
@@ -274,7 +383,8 @@ TEST(basic_cpu_test, status_flag) {
 	EXPECT_GT(cpu->sr & 0b00000100, 0);
 }
 
-TEST(basic_cpu_test, system) {
+TEST(basic_cpu_test, system)
+{
 	bus->set_mem(mem);
 	bus->init_mem(); // clear memory from previous tests.
 
