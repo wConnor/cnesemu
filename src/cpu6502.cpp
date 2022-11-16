@@ -32,6 +32,7 @@ void CPU6502::execute()
 
 		spdlog::debug("opcode=0x{:02x} ({} {}), pc=0x{:04x}, acc=0x{:02x}, x=0x{:02x}, y=0x{:02x}, sp=0x{:02x}, sr=0b{:08b}",
 					  opcode, instr_matrix[opcode].instr, instr_matrix[opcode].addr_mode, pc, acc, x, y, sp, sr);
+
 	}
 
 	std::this_thread::sleep_for(std::chrono::milliseconds(55));
@@ -251,8 +252,6 @@ std::uint8_t CPU6502::AND()
 	if ((acc & 0b10000000) != 0) {
 		sr |= 0b10000000;
 	}
-
-	pc++;
 
 	return 1;
 }
