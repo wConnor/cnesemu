@@ -1,10 +1,7 @@
 #include "cpu6502.hpp"
-#include <chrono>
-#include <thread>
 
 CPU6502::CPU6502()
 {
-
 }
 
 void CPU6502::reset()
@@ -13,8 +10,9 @@ void CPU6502::reset()
 	sr = 0b00100000;
 	addr_abs = 0x0000;
 	pc = 0xFFFC;
-	pc = (fetch_byte() << 8) | fetch_byte();
-	sp = 0xFF; // sp not used due to std::stack; should change for accuracy sake.
+	std::uint8_t lo = fetch_byte(), hi = fetch_byte();
+	pc = (hi << 8) | lo;
+	sp = 0xFF; // sp not used due to std::stack; to change.
 	stack = std::stack<std::uint8_t>();
 
 	spdlog::debug("CPU reset. pc=0x{:04x}", pc);
@@ -26,13 +24,13 @@ void CPU6502::execute()
 	if (cycles == 0) {
 		opcode = this->fetch_byte();
 
-		cycles = instr_matrix[opcode].cycles +
-			addr_mode_map[instr_matrix[opcode].addr_mode]() +
+		cycles = instr_matrix[opcode].cycles + addr_mode_map[instr_matrix[opcode].addr_mode]() +
 			instr_map[instr_matrix[opcode].instr]();
 
-		spdlog::debug("opcode=0x{:02x} ({} {}), pc=0x{:04x}, acc=0x{:02x}, x=0x{:02x}, y=0x{:02x}, sp=0x{:02x}, sr=0b{:08b}",
-					  opcode, instr_matrix[opcode].instr, instr_matrix[opcode].addr_mode, pc, acc, x, y, sp, sr);
-
+		spdlog::debug("opcode=0x{:02x} ({} {}), pc=0x{:04x}, acc=0x{:02x}, "
+					  "x=0x{:02x}, y=0x{:02x}, sp=0x{:02x}, sr=0b{:08b}",
+					  opcode, instr_matrix[opcode].instr, instr_matrix[opcode].addr_mode, pc, acc,
+					  x, y, sp, sr);
 	}
 
 	std::this_thread::sleep_for(std::chrono::milliseconds(55));
@@ -114,9 +112,7 @@ std::uint8_t CPU6502::ABX()
 	addr_abs = ((hi << 8) | lo) + y;
 
 	// checks for page boundary crossing; additional cycle if so.
-	return (addr_abs & 0xFF00) != (hi << 8)
-		? 1
-		: 0;
+	return (addr_abs & 0xFF00) != (hi << 8) ? 1 : 0;
 }
 
 std::uint8_t CPU6502::ABY()
@@ -127,9 +123,7 @@ std::uint8_t CPU6502::ABY()
 	addr_abs = ((hi << 8) | lo) + y;
 
 	// checks for page boundary crossing; additional cycle if so.
-	return (addr_abs & 0xFF00) != (hi << 8)
-		? 1
-		: 0;
+	return (addr_abs & 0xFF00) != (hi << 8) ? 1 : 0;
 }
 
 std::uint8_t CPU6502::ACC()
@@ -145,8 +139,7 @@ std::uint8_t CPU6502::IND()
 
 	std::uint16_t ptr = (hi_ptr << 8) | lo_ptr;
 
-	addr_abs = lo_ptr == 0x00FF
-		? (this->read_byte(ptr & 0xFF00) << 8) | this->read_byte(ptr)
+	addr_abs = lo_ptr == 0x00FF ? (this->read_byte(ptr & 0xFF00) << 8) | this->read_byte(ptr)
 		: (this->read_byte(ptr + 1) << 8) | this->read_byte(ptr);
 
 	return 0;
@@ -224,7 +217,7 @@ std::uint8_t CPU6502::ADC()
 {
 	fetch();
 	if (acc > 0 && fetched > std::numeric_limits<std::uint8_t>::max() - acc - (sr & (1 << 0))) {
-		//sr |= 0b10000001; // definitely wrong; must study more.
+		// sr |= 0b10000001; // definitely wrong; must study more.
 	}
 
 	acc += fetched + (sr & (1 << 0));
@@ -258,6 +251,26 @@ std::uint8_t CPU6502::AND()
 
 std::uint8_t CPU6502::ASL()
 {
+	fetch();
+	fetched <<= 1;
+
+	if ((fetched & 0xFF00) > 0) {
+		sr |= 0b00000001;
+	}
+
+	if (fetched == 0) {
+		sr |= 0b00000010;
+	}
+
+	if ((fetched & 0b10000000) > 0) {
+		sr |= 0b10000000;
+	}
+
+	if (instr_matrix[opcode].addr_mode == "IMP") {
+		acc = fetched;
+	} else {
+		write_byte(addr_abs, fetched);
+	}
 
 	return 0;
 }
@@ -317,6 +330,9 @@ std::uint8_t CPU6502::BIT()
 {
 	fetch();
 
+	std::uint8_t temp = acc & 0b00000010;
+	sr = temp & 0b11000000;
+
 	return 0;
 }
 
@@ -373,10 +389,13 @@ std::uint8_t CPU6502::BPL()
 
 std::uint8_t CPU6502::BRK()
 {
-	stack.push(pc);
+	pc++;
+	stack.push(pc & 0xFF);
+	stack.push((pc >> 8) & 0xFF);
 	stack.push(sr);
 	pc = 0xFFFE;
-	pc = (fetch_byte() << 8) | fetch_byte();
+	std::uint8_t lo = fetch_byte(), hi = fetch_byte();
+	pc = (hi << 8) | lo;
 	sr |= 0b00010000;
 
 	return 0;
@@ -443,6 +462,19 @@ std::uint8_t CPU6502::CLV()
 std::uint8_t CPU6502::CMP()
 {
 	fetch();
+	std::uint8_t result = acc - fetched;
+
+	if (result >= fetched) {
+		sr |= 0b00000001;
+	}
+
+	if (result == fetched) {
+		sr |= 0b00000010;
+	}
+
+	if ((result & 0b10000000) > 0) {
+		sr |= 0b10000000;
+	}
 
 	return 1;
 }
@@ -450,6 +482,19 @@ std::uint8_t CPU6502::CMP()
 std::uint8_t CPU6502::CPX()
 {
 	fetch();
+	std::uint8_t result = x - fetched;
+
+	if (result >= fetched) {
+		sr |= 0b00000001;
+	}
+
+	if (result == fetched) {
+		sr |= 0b00000010;
+	}
+
+	if ((result & 0b10000000) > 0) {
+		sr |= 0b10000000;
+	}
 
 	return 0;
 }
@@ -457,15 +502,17 @@ std::uint8_t CPU6502::CPX()
 std::uint8_t CPU6502::CPY()
 {
 	fetch();
-	if (y >= fetched) {
+	std::uint8_t result = y - fetched;
+
+	if (result >= fetched) {
 		sr |= 0b00000001;
 	}
 
-	if (acc == fetched) {
+	if (result == fetched) {
 		sr |= 0b00000010;
 	}
 
-	if (((y - fetched)) & 1) {
+	if ((result & 0b10000000) > 0) {
 		sr |= 0b10000000;
 	}
 
@@ -640,11 +687,30 @@ std::uint8_t CPU6502::LDY()
 	}
 
 	return 0;
-
 }
 
 std::uint8_t CPU6502::LSR()
 {
+	fetch();
+	fetched >>= 1;
+
+	if ((fetched & 0xFF00) > 0) {
+		sr |= 0b00000001;
+	}
+
+	if (fetched == 0) {
+		sr |= 0b00000010;
+	}
+
+	if ((fetched & 0b10000000) > 0) {
+		sr |= 0b10000000;
+	}
+
+	if (instr_matrix[opcode].addr_mode == "IMP") {
+		acc = fetched;
+	} else {
+		write_byte(addr_abs, fetched);
+	}
 
 	return 0;
 }
@@ -703,24 +769,70 @@ std::uint8_t CPU6502::PLP()
 	sr = stack.top();
 	stack.pop();
 
-
 	return 0;
 }
 
 std::uint8_t CPU6502::ROL()
 {
+	fetch();
+	fetched <<= 1;
+
+	if ((fetched & 0xFF00) > 0) {
+		sr |= 0b00000001;
+	}
+
+	if (fetched == 0) {
+		sr |= 0b00000010;
+	}
+
+	if ((fetched & 0b10000000) > 0) {
+		sr |= 0b10000000;
+	}
+
+	if (instr_matrix[opcode].addr_mode == "IMP") {
+		acc = fetched;
+	} else {
+		write_byte(addr_abs, fetched);
+	}
 
 	return 0;
 }
 
 std::uint8_t CPU6502::ROR()
 {
+	fetch();
+	std::uint8_t temp = fetched >> 1;
+
+	if ((fetched & 0xFF00) > 0) {
+		sr |= 0b00000001;
+	}
+
+	if (fetched == 0) {
+		sr |= 0b00000010;
+	}
+
+	if ((fetched & 0b10000000) > 0) {
+		sr |= 0b10000000;
+	}
+
+	if (instr_matrix[opcode].addr_mode == "IMP") {
+		acc = fetched;
+	} else {
+		write_byte(addr_abs, fetched);
+	}
 
 	return 0;
 }
 
 std::uint8_t CPU6502::RTI()
 {
+	sr = stack.top();
+	stack.pop();
+	std::uint8_t hi = stack.top();
+	stack.pop();
+	std::uint8_t lo = stack.top();
+	stack.pop();
+	pc = (hi << 8) | lo;
 	return 0;
 }
 
@@ -866,16 +978,13 @@ void CPU6502::IRQ()
 {
 	// if I flag (bit 2) is clear, interrupts are allowed.
 	if ((sr & 0b00000000) == 0) {
-
 	}
 }
 
 void CPU6502::NMI()
 {
-
 }
 
 CPU6502::~CPU6502()
 {
-
 }

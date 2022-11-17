@@ -32,6 +32,19 @@ void prepare_mem()
 	cpu->reset();
 }
 
+void execute_until(const std::uint16_t &addr, const bool &jump)
+{
+	if (jump) {
+		while (cpu->pc < addr) {
+			cpu->execute();
+		}
+	} else {
+		while (cpu->pc != addr) {
+			cpu->execute();
+		}
+	}
+}
+
 TEST(basic_cpu_test, load_store)
 {
 	prepare_mem();
@@ -68,9 +81,7 @@ TEST(basic_cpu_test, load_store)
 	(*mem)[0x000D] = 0xAC;
 	(*mem)[0x000E] = 0xBB;
 
-	while (cpu->pc != 0x000F) {
-		cpu->execute();
-	}
+	execute_until(0x000F, false);
 
 	EXPECT_EQ(cpu->acc, (*mem)[0x0001]);
 	EXPECT_EQ(cpu->x, (*mem)[0x0003]);
@@ -90,33 +101,25 @@ TEST(basic_cpu_test, register_transfer)
 	// TAX IMP: transfer ACC to X register
 	cpu->acc = RAND_UINT8;
 	(*mem)[0x0000] = 0xAA;
-	while (cpu->pc != 0x0001) {
-		cpu->execute();
-	}
+	execute_until(0x0001, false);
 	EXPECT_EQ(cpu->acc, cpu->x);
 
 	// TAY IMP: transfer ACC to Y register
 	cpu->acc = RAND_UINT8;
 	(*mem)[0x0001] = 0xA8;
-	while (cpu->pc != 0x0002) {
-		cpu->execute();
-	}
+	execute_until(0x0002, false);
 	EXPECT_EQ(cpu->acc, cpu->y);
 
 	// TXA IMP: transfer X to ACC register
 	cpu->x = RAND_UINT8;
 	(*mem)[0x0002] = 0x8A;
-	while (cpu->pc != 0x0003) {
-		cpu->execute();
-	}
+	execute_until(0x0003, false);
 	EXPECT_EQ(cpu->x, cpu->acc);
 
 	// TYA IMP: transfer Y to ACC register
 	cpu->y = RAND_UINT8;
 	(*mem)[0x0003] = 0x98;
-	while (cpu->pc != 0x0004) {
-		cpu->execute();
-	}
+	execute_until(0x0004, false);
 	EXPECT_EQ(cpu->y, cpu->acc);
 }
 
@@ -144,12 +147,9 @@ TEST(basic_cpu_test, logical)
 	(*mem)[0x0002] = 0x44;
 	(*mem)[0x4433] = RAND_UINT8; // byte to AND w/ ACC.
 
-	while (cpu->pc != 0x0003) {
-		cpu->execute();
-	}
+	execute_until(0x0003, false);
 
-	EXPECT_EQ(cpu->acc,
-			  temp & (*mem)[0x4433]); // check AND on ACC has been carried out.
+	EXPECT_EQ(cpu->acc, temp & (*mem)[0x4433]); // check AND on ACC has been carried out.
 	EXPECT_EQ(cpu->acc & 0b10000000,
 			  (cpu->sr) & 0b10000000); // check N flag has been set correctly.
 
@@ -161,9 +161,7 @@ TEST(basic_cpu_test, logical)
 	(*mem)[0x0003] = 0x49;
 	(*mem)[0x0004] = RAND_UINT8;
 
-	while (cpu->pc != 0x0005) {
-		cpu->execute();
-	}
+	execute_until(0x0005, false);
 
 	EXPECT_EQ(cpu->acc,
 			  temp ^ (*mem)[0x0004]); // check AND on ACC has been carried out.
@@ -181,9 +179,7 @@ TEST(basic_cpu_test, logical)
 	(*mem)[0x0007] = 0x55;
 	(*mem)[0x5588] = RAND_UINT8;
 
-	while (cpu->pc != 0x0008) {
-		cpu->execute();
-	}
+	execute_until(0x0008, false);
 
 	EXPECT_EQ(cpu->acc,
 			  temp | (*mem)[0x5588]); // check AND on ACC has been carried out.
@@ -197,9 +193,7 @@ TEST(basic_cpu_test, logical)
 	(*mem)[0x000A] = 0xAF;
 	(*mem)[0xAFFA] = RAND_UINT8;
 
-	while (cpu->pc != 0x000B) {
-		cpu->execute();
-	}
+	execute_until(0x000B, false);
 
 	// implement BIT test first.
 }
@@ -226,9 +220,7 @@ TEST(basic_cpu_test, inc_and_dec)
 	(*mem)[0x0002] = 0xBB;
 	(*mem)[0xBBAA] = temp;
 
-	while (cpu->pc != 0x0003) {
-		cpu->execute();
-	}
+	execute_until(0x0003, false);
 
 	EXPECT_EQ((*mem)[0xBBAA], temp + 1);
 
@@ -236,9 +228,7 @@ TEST(basic_cpu_test, inc_and_dec)
 	temp = cpu->x;
 	(*mem)[0x0003] = 0xE8;
 
-	while (cpu->pc != 0x0004) {
-		cpu->execute();
-	}
+	execute_until(0x0004, false);
 
 	EXPECT_EQ(cpu->x, temp + 1);
 
@@ -246,9 +236,7 @@ TEST(basic_cpu_test, inc_and_dec)
 	temp = cpu->y;
 	(*mem)[0x0004] = 0xC8;
 
-	while (cpu->pc != 0x0005) {
-		cpu->execute();
-	}
+	execute_until(0x0005, false);
 
 	EXPECT_EQ(cpu->y, temp + 1);
 
@@ -259,9 +247,7 @@ TEST(basic_cpu_test, inc_and_dec)
 	(*mem)[0x0007] = 0xED;
 	(*mem)[0xEDDE] = temp;
 
-	while (cpu->pc != 0x0008) {
-		cpu->execute();
-	}
+	execute_until(0x0008, false);
 
 	EXPECT_EQ((*mem)[0xEDDE], temp - 1);
 
@@ -269,9 +255,7 @@ TEST(basic_cpu_test, inc_and_dec)
 	temp = cpu->x;
 	(*mem)[0x0008] = 0xCA;
 
-	while (cpu->pc != 0x0009) {
-		cpu->execute();
-	}
+	execute_until(0x0009, false);
 
 	EXPECT_EQ(cpu->x, temp - 1);
 
@@ -279,9 +263,7 @@ TEST(basic_cpu_test, inc_and_dec)
 	temp = cpu->y;
 	(*mem)[0x0009] = 0x88;
 
-	while (cpu->pc != 0x000A) {
-		cpu->execute();
-	}
+	execute_until(0x000A, false);
 
 	EXPECT_EQ(cpu->y, temp - 1);
 }
@@ -306,9 +288,7 @@ TEST(basic_cpu_test, jumps_and_calls)
 	(*mem)[0x0001] = 0x64;
 	(*mem)[0x0002] = 0x99;
 
-	while (cpu->pc < 0x0003) {
-		cpu->execute();
-	}
+	execute_until(0x0003, true);
 
 	EXPECT_EQ(cpu->pc, 0x9964);
 
@@ -317,9 +297,7 @@ TEST(basic_cpu_test, jumps_and_calls)
 	(*mem)[0x9965] = 0xAA;
 	(*mem)[0x9966] = 0xCC;
 
-	while (cpu->pc < 0x9967) {
-		cpu->execute();
-	}
+	execute_until(0x9967, true);
 
 	EXPECT_EQ(cpu->pc, 0xCCAA);
 	// test stack
@@ -341,69 +319,80 @@ TEST(basic_cpu_test, status_flag)
 	EXPECT_EQ(cpu->pc, 0x0000);
 
 	(*mem)[0x0000] = 0x18; // CLC: clear carry flag.
-	while (cpu->pc != 0x0001) {
-		cpu->execute();
-	}
+	execute_until(0x0001, false);
 	EXPECT_EQ(cpu->sr & 0b00000001, 0);
 
 	(*mem)[0x0001] = 0xD8; // CLD: clear decimal flag.
-	while (cpu->pc != 0x0002) {
-		cpu->execute();
-	}
+	execute_until(0x0002, false);
 	EXPECT_EQ(cpu->sr & 0b00001000, 0);
 
 	(*mem)[0x0002] = 0x58; // CLI: clear interrupt disable flag.
-	while (cpu->pc != 0x0003) {
-		cpu->execute();
-	}
+	execute_until(0x0003, false);
 	EXPECT_EQ(cpu->sr & 0b00000100, 0);
 
 	(*mem)[0x0003] = 0xB8; // CLV: clear overflow flag.
-	while (cpu->pc != 0x0004) {
-		cpu->execute();
-	}
+	execute_until(0x0004, false);
 	EXPECT_EQ(cpu->sr & 0b01000000, 0);
 
 	(*mem)[0x0004] = 0x38; // SEC: set carry flag.
-	while (cpu->pc != 0x0005) {
-		cpu->execute();
-	}
+	execute_until(0x0005, false);
 	EXPECT_GT(cpu->sr & 0b00000001, 0);
 
 	(*mem)[0x0005] = 0xF8; // SED: set decimal flag.
-	while (cpu->pc != 0x0006) {
-		cpu->execute();
-	}
+	execute_until(0x0006, false);
 	EXPECT_GT(cpu->sr & 0b00001000, 0);
 
 	(*mem)[0x0006] = 0x78; // SEI: set interrupt disable flag.
-	while (cpu->pc != 0x0007) {
-		cpu->execute();
-	}
+	execute_until(0x0007, false);
 	EXPECT_GT(cpu->sr & 0b00000100, 0);
 }
 
 TEST(basic_cpu_test, system)
 {
+	spdlog::set_level(spdlog::level::debug);
 	bus->set_mem(mem);
 	bus->init_mem(); // clear memory from previous tests.
 
-	// sets the reset vector to jump to address 0xDDAA.
-	(*mem)[0xFFFC] = 0xAA;
-	(*mem)[0xFFFD] = 0xDD;
+	// sets the reset vector to jump to address 0x0000.
+	(*mem)[0xFFFC] = 0x99;
+	(*mem)[0xFFFD] = 0x77;
 
 	// connects the bus to the CPU and sets its registers to a known state.
 	cpu->set_bus(bus);
 	cpu->reset();
 
 	// set to 0x0000 instead of the reset vector to test the BRK operation.
-	cpu->pc = 0x0000;
+	cpu->pc = 0x7799;
 
-	// BRK
-	(*mem)[0x0000] = 0x00;
+	// BRK: forces the generation of an interrupt request.
+	// https://www.c64-wiki.com/wiki/BRK
+	(*mem)[0x7799] = 0x00;
+	(*mem)[0x779A] = 0xEA; // NOP recommended after BRK due to pc + 2.
 
-	// ?
-	for (int i = 0; i != 8; ++i) {
+	// address for the BRK operation to jump to.
+	(*mem)[0xFFFE] = 0xAA;
+	(*mem)[0xFFFF] = 0xDD;
+
+	execute_until(0x779A, true);
+	EXPECT_EQ(cpu->pc, 0xDDAA);		// cpu->pc should have jumped to the new address.
+	EXPECT_GT(cpu->sr & 0b00010000, 0); // break bit should be set to 1.
+
+	// NOP: no operation; simply advance pc by 1.
+	(*mem)[0xDDAA] = 0xEA;
+	(*mem)[0xDDAB] = 0xB8; // random instruction to be executed next.
+
+	execute_until(0xDDAC, false);
+	EXPECT_EQ(cpu->opcode, (*mem)[0xDDAB]); // cpu->pc should have advanced.
+
+	// RTI: return from an interrupt request.
+	std::uint16_t old_pc = cpu->pc;
+
+	(*mem)[0xDDAC] = 0x40;
+
+	while (cpu->pc > 0xDDAB && cpu->pc < 0xDDAD) {
 		cpu->execute();
 	}
+
+	EXPECT_NE(old_pc, cpu->pc);
+	EXPECT_EQ(cpu->pc, 0x779B); // BRK increments the pc by 2 instead of 1.
 }
