@@ -181,11 +181,8 @@ TEST(basic_cpu_test, logical)
 
 	execute_until(0x0008, false);
 
-	EXPECT_EQ(cpu->acc,
-			  temp | (*mem)[0x5588]); // check AND on ACC has been carried out.
-	//	EXPECT_EQ(cpu->acc & 0b10000000,
-	//			  (cpu->sr) & 0b10000000); // check N flag has been set
-	// correctly.
+	EXPECT_EQ(cpu->acc, temp | (*mem)[0x5588]); // check AND on ACC has been carried out.
+	EXPECT_EQ(cpu->acc & 0b10000000, (cpu->sr) & 0b10000000); // check N flag.
 
 	// BIT ABS: tests if one or more bits are set in a target memory location.
 	(*mem)[0x0008] = 0x2C;
@@ -195,7 +192,14 @@ TEST(basic_cpu_test, logical)
 
 	execute_until(0x000B, false);
 
-	// implement BIT test first.
+	if ((cpu->acc & (*mem)[0xAFFA]) == 0) {
+		EXPECT_GT(cpu->sr & 0b00000010, 0);
+	} else {
+		EXPECT_EQ(cpu->sr & 0b00000010, 0);
+	}
+
+	EXPECT_EQ((*mem)[0xAFFA] & 0b11000000,
+			  cpu->sr & 0b11000000); // N and V flag set to fetched result.
 }
 
 TEST(basic_cpu_test, arithmetic)
@@ -349,7 +353,6 @@ TEST(basic_cpu_test, status_flag)
 
 TEST(basic_cpu_test, system)
 {
-	spdlog::set_level(spdlog::level::debug);
 	bus->set_mem(mem);
 	bus->init_mem(); // clear memory from previous tests.
 

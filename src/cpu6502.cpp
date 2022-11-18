@@ -222,9 +222,7 @@ std::uint8_t CPU6502::ADC()
 
 	acc += fetched + (sr & (1 << 0));
 
-	if (acc == 0) {
-		sr |= 0b00000010;
-	}
+	acc == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((acc & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -238,9 +236,7 @@ std::uint8_t CPU6502::AND()
 	fetch();
 	acc &= fetched;
 
-	if (acc == 0) {
-		sr |= 0b00000010;
-	}
+	acc == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((acc & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -258,9 +254,7 @@ std::uint8_t CPU6502::ASL()
 		sr |= 0b00000001;
 	}
 
-	if (fetched == 0) {
-		sr |= 0b00000010;
-	}
+	fetched == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((fetched & 0b10000000) > 0) {
 		sr |= 0b10000000;
@@ -330,8 +324,11 @@ std::uint8_t CPU6502::BIT()
 {
 	fetch();
 
-	std::uint8_t temp = acc & 0b00000010;
-	sr = temp & 0b11000000;
+	(acc & fetched) == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
+
+	// ugly solution, but works.
+	(fetched >> 7) & 1 ? sr |= 0b10000000 : sr &= 0b01111111;
+	(fetched >> 6) & 1 ? sr |= 0b01000000 : sr &= 0b10111111;
 
 	return 0;
 }
@@ -524,9 +521,7 @@ std::uint8_t CPU6502::DEC()
 	fetch();
 	this->write_word(addr_abs, (fetched - 1) & 0x00FF);
 
-	if (fetched - 1 == 0) {
-		sr |= 0b00000010;
-	}
+	fetched - 1 == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if (((fetched - 1) & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -539,9 +534,7 @@ std::uint8_t CPU6502::DEX()
 {
 	x--;
 
-	if (x == 0) {
-		sr |= 0b00000010;
-	}
+	x == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((x & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -554,9 +547,7 @@ std::uint8_t CPU6502::DEY()
 {
 	y--;
 
-	if (y == 0) {
-		sr |= 0b00000010;
-	}
+	y == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((y & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -570,9 +561,7 @@ std::uint8_t CPU6502::EOR()
 	fetch();
 	acc ^= fetched;
 
-	if (acc == 0) {
-		sr |= 0b00000010;
-	}
+	acc == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((acc & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -586,9 +575,7 @@ std::uint8_t CPU6502::INC()
 	fetch();
 	this->write_word(addr_abs, fetched + 1);
 
-	if (fetched + 1 == 0) {
-		sr |= 0b00000010;
-	}
+	fetched + 1 == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if (((fetched + 1) & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -601,9 +588,7 @@ std::uint8_t CPU6502::INX()
 {
 	x++;
 
-	if (x == 0) {
-		sr |= 0b00000010;
-	}
+	x == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((x & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -616,9 +601,7 @@ std::uint8_t CPU6502::INY()
 {
 	y++;
 
-	if (y == 0) {
-		sr |= 0b00000010;
-	}
+	y == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((y & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -646,9 +629,7 @@ std::uint8_t CPU6502::LDA()
 	fetch();
 	acc = fetched;
 
-	if (acc == 0) {
-		sr |= 0b00000010;
-	}
+	acc == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((acc & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -662,9 +643,7 @@ std::uint8_t CPU6502::LDX()
 	fetch();
 	x = fetched;
 
-	if (x == 0) {
-		sr |= 0b00000010;
-	}
+	x == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((x & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -678,9 +657,7 @@ std::uint8_t CPU6502::LDY()
 	fetch();
 	y = fetched;
 
-	if (y == 0) {
-		sr |= 0b00000010;
-	}
+	y == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((y & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -698,9 +675,7 @@ std::uint8_t CPU6502::LSR()
 		sr |= 0b00000001;
 	}
 
-	if (fetched == 0) {
-		sr |= 0b00000010;
-	}
+	fetched == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((fetched & 0b10000000) > 0) {
 		sr |= 0b10000000;
@@ -725,9 +700,7 @@ std::uint8_t CPU6502::ORA()
 	fetch();
 	acc |= fetched;
 
-	if (acc == 0) {
-		sr |= 0b00000010;
-	}
+	acc == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((acc & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -753,9 +726,7 @@ std::uint8_t CPU6502::PLA()
 	acc = stack.top();
 	stack.pop();
 
-	if (acc == 0) {
-		sr |= 0b00000010;
-	}
+	acc == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((acc & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -781,9 +752,7 @@ std::uint8_t CPU6502::ROL()
 		sr |= 0b00000001;
 	}
 
-	if (fetched == 0) {
-		sr |= 0b00000010;
-	}
+	fetched == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((fetched & 0b10000000) > 0) {
 		sr |= 0b10000000;
@@ -807,9 +776,7 @@ std::uint8_t CPU6502::ROR()
 		sr |= 0b00000001;
 	}
 
-	if (fetched == 0) {
-		sr |= 0b00000010;
-	}
+	fetched == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((fetched & 0b10000000) > 0) {
 		sr |= 0b10000000;
@@ -891,9 +858,7 @@ std::uint8_t CPU6502::TAX()
 {
 	x = acc;
 
-	if (x == 0) {
-		sr |= 0b00000010;
-	}
+	x == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((x & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -906,9 +871,7 @@ std::uint8_t CPU6502::TAY()
 {
 	y = acc;
 
-	if (y == 0) {
-		sr |= 0b00000010;
-	}
+	y == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((y & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -921,9 +884,7 @@ std::uint8_t CPU6502::TSX()
 {
 	x = sp;
 
-	if (x == 0) {
-		sr |= 0b00000010;
-	}
+	x == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((x & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -936,9 +897,7 @@ std::uint8_t CPU6502::TXA()
 {
 	acc = x;
 
-	if (acc == 0) {
-		sr |= 0b00000010;
-	}
+	acc == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((acc & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -957,9 +916,7 @@ std::uint8_t CPU6502::TYA()
 {
 	acc = y;
 
-	if (acc == 0) {
-		sr |= 0b00000010;
-	}
+	acc == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 
 	if ((acc & 0b10000000) != 0) {
 		sr |= 0b10000000;
