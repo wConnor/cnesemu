@@ -82,7 +82,6 @@ TEST(basic_cpu_test, load_store)
 	(*mem)[0x000E] = 0xBB;
 
 	execute_until(0x000F, false);
-
 	EXPECT_EQ(cpu->acc, (*mem)[0x0001]);
 	EXPECT_EQ(cpu->x, (*mem)[0x0003]);
 	EXPECT_EQ(cpu->y, (*mem)[0x0005]);
@@ -133,56 +132,47 @@ TEST(basic_cpu_test, stack_ops)
 
 TEST(basic_cpu_test, logical)
 {
+	std::uint8_t temp;
 	prepare_mem();
 
 	// ensure that reset vector jump has worked properly.
 	EXPECT_EQ(cpu->pc, 0x0000);
 
-	std::uint8_t temp = RAND_UINT8;
-	cpu->acc = temp;
-
 	// AND ABS: logical AND performed, bit-by-bit, using the memory location.
+	temp = RAND_UINT8;
+	cpu->acc = temp; // random ACC value for testing.
 	(*mem)[0x0000] = 0x2D;
 	(*mem)[0x0001] = 0x33;
 	(*mem)[0x0002] = 0x44;
 	(*mem)[0x4433] = RAND_UINT8; // byte to AND w/ ACC.
 
 	execute_until(0x0003, false);
-
 	EXPECT_EQ(cpu->acc, temp & (*mem)[0x4433]); // check AND on ACC has been carried out.
-	EXPECT_EQ(cpu->acc & 0b10000000,
-			  (cpu->sr) & 0b10000000); // check N flag has been set correctly.
-
-	temp = RAND_UINT8;
-	cpu->acc = temp;
+	EXPECT_EQ(cpu->acc & 0b10000000, cpu->sr & 0b10000000); // check N flag.
 
 	// EOR IMM: exclusive OR operation is performed bit-by-bit on the ACC and
 	// contents of memory.
+	temp = RAND_UINT8;
+	cpu->acc = temp; // random ACC value for testing.
 	(*mem)[0x0003] = 0x49;
 	(*mem)[0x0004] = RAND_UINT8;
 
 	execute_until(0x0005, false);
-
-	EXPECT_EQ(cpu->acc,
-			  temp ^ (*mem)[0x0004]); // check AND on ACC has been carried out.
-	//	EXPECT_EQ(cpu->acc & 0b10000000,
-	//			  (cpu->sr) & 0b10000000); // check N flag has been set
-	// correctly.
-
-	temp = RAND_UINT8;
-	cpu->acc = temp;
+	EXPECT_EQ(cpu->acc, temp ^ (*mem)[0x0004]); // check EOR on ACC has been carried out.
+	EXPECT_EQ(cpu->acc & 0b10000000, cpu->sr & 0b10000000); // check N flag.
 
 	// ORA ABS: inclusive OR operation is performed bit-by-bit on the ACC and
 	// contents of memory.
+	temp = RAND_UINT8;
+	cpu->acc = temp; // random ACC value for testing.
 	(*mem)[0x0005] = 0x0D;
 	(*mem)[0x0006] = 0x88;
 	(*mem)[0x0007] = 0x55;
 	(*mem)[0x5588] = RAND_UINT8;
 
 	execute_until(0x0008, false);
-
-	EXPECT_EQ(cpu->acc, temp | (*mem)[0x5588]); // check AND on ACC has been carried out.
-	EXPECT_EQ(cpu->acc & 0b10000000, (cpu->sr) & 0b10000000); // check N flag.
+	EXPECT_EQ(cpu->acc, temp | (*mem)[0x5588]); // check ORA on ACC has been carried out.
+	EXPECT_EQ(cpu->acc & 0b10000000, cpu->sr & 0b10000000); // check N flag.
 
 	// BIT ABS: tests if one or more bits are set in a target memory location.
 	(*mem)[0x0008] = 0x2C;
@@ -208,6 +198,77 @@ TEST(basic_cpu_test, arithmetic)
 
 	// ensure that reset vector jump has worked properly.
 	EXPECT_EQ(cpu->pc, 0x0000);
+
+	// ADC
+
+	// SBC
+
+	// CMP ABX: compares the contents of ACC with a value held in memory.
+	cpu->acc = RAND_UINT8; // random ACC value.
+	cpu->x = 0x05;	   // offset to test ABX addressing.
+	(*mem)[0x0000] = 0xDD;
+	(*mem)[0x0001] = 0x88;
+	(*mem)[0x0002] = 0x99;
+	(*mem)[0x9988 + cpu->x] = RAND_UINT8; // 0x9988 + 0x05 offset.
+
+	execute_until(0x0003, false);
+	if (cpu->acc - (*mem)[0x9988 + cpu->x] == 0) {
+		EXPECT_GT(cpu->sr & 0b00000010, 0); // check Z flag set.
+	} else {
+		EXPECT_EQ(cpu->sr & 0b00000010, 0); // check Z flag clear.
+	}
+
+	if (cpu->acc >= (*mem)[0x9988 + cpu->x]) {
+		EXPECT_GT(cpu->sr & 0b00000001, 0); // check C flag set.
+	} else {
+		EXPECT_EQ(cpu->sr & 0b00000001, 0); // check C flag clear.
+	}
+
+	EXPECT_EQ((cpu->acc - (*mem)[0x9988 + cpu->x]) & 0b10000000,
+			  cpu->sr & 0b10000000); // check N flag.
+
+	// CPX IMM: compares the contents of the x register with a value in memory.
+	cpu->x = RAND_UINT8;
+	(*mem)[0x0003] = 0xE0;
+	(*mem)[0x0004] = RAND_UINT8;
+
+	execute_until(0x0005, false);
+	if (cpu->x - (*mem)[0x0004] == 0) {
+		EXPECT_GT(cpu->sr & 0b00000010, 0); // check Z flag set.
+	} else {
+		EXPECT_EQ(cpu->sr & 0b00000010, 0); // check Z flag clear.
+	}
+
+	EXPECT_EQ(cpu->sr & 0b10000000, (cpu->x - (*mem)[0x0004]) & 0b10000000); // check N flag.
+	if (cpu->x >= (*mem)[0x0004]) {
+		EXPECT_GT(cpu->sr & 0b00000001, 0); // check C flag set.
+	} else {
+		EXPECT_EQ(cpu->sr & 0b00000001, 0); // check C flag clear.
+	}
+
+	EXPECT_EQ((cpu->x - (*mem)[0x0004]) & 0b10000000, cpu->sr & 0b10000000); // check N flag.
+
+	// CPY ABS: compares the contents of the y register with a value in memory.
+	cpu->y = RAND_UINT8;
+	(*mem)[0x0005] = 0xCC;
+	(*mem)[0x0006] = 0xBA;
+	(*mem)[0x0007] = 0xBA;
+	(*mem)[0xBABA] = RAND_UINT8;
+
+	execute_until(0x0008, false);
+	if (cpu->y - (*mem)[0xBABA] == 0) {
+		EXPECT_GT(cpu->sr & 0b00000010, 0); // check Z flag set.
+	} else {
+		EXPECT_EQ(cpu->sr & 0b00000010, 0); // check Z flag clear.
+	}
+
+	if (cpu->y >= (*mem)[0xBABA]) {
+		EXPECT_GT(cpu->sr & 0b00000001, 0); // check C flag.
+	} else {
+		EXPECT_EQ(cpu->sr & 0b00000001, 0); // check C flag.
+	}
+
+	EXPECT_EQ((cpu->y - (*mem)[0xBABA]) & 0b10000000, cpu->sr & 0b10000000); // check N flag.
 }
 
 TEST(basic_cpu_test, inc_and_dec)
@@ -225,7 +286,6 @@ TEST(basic_cpu_test, inc_and_dec)
 	(*mem)[0xBBAA] = temp;
 
 	execute_until(0x0003, false);
-
 	EXPECT_EQ((*mem)[0xBBAA], temp + 1);
 
 	// INX IMP: adds one to the X register.
@@ -233,7 +293,6 @@ TEST(basic_cpu_test, inc_and_dec)
 	(*mem)[0x0003] = 0xE8;
 
 	execute_until(0x0004, false);
-
 	EXPECT_EQ(cpu->x, temp + 1);
 
 	// INY IMP: adds one to the Y register.
@@ -241,7 +300,6 @@ TEST(basic_cpu_test, inc_and_dec)
 	(*mem)[0x0004] = 0xC8;
 
 	execute_until(0x0005, false);
-
 	EXPECT_EQ(cpu->y, temp + 1);
 
 	// DEC ABS: subtracts one from the value held at a memory location.
@@ -252,7 +310,6 @@ TEST(basic_cpu_test, inc_and_dec)
 	(*mem)[0xEDDE] = temp;
 
 	execute_until(0x0008, false);
-
 	EXPECT_EQ((*mem)[0xEDDE], temp - 1);
 
 	// DEX IMP: subtracts one from the X register.
@@ -260,7 +317,6 @@ TEST(basic_cpu_test, inc_and_dec)
 	(*mem)[0x0008] = 0xCA;
 
 	execute_until(0x0009, false);
-
 	EXPECT_EQ(cpu->x, temp - 1);
 
 	// DEY IMP: subtracts one from the Y register.
@@ -268,7 +324,6 @@ TEST(basic_cpu_test, inc_and_dec)
 	(*mem)[0x0009] = 0x88;
 
 	execute_until(0x000A, false);
-
 	EXPECT_EQ(cpu->y, temp - 1);
 }
 
@@ -293,7 +348,6 @@ TEST(basic_cpu_test, jumps_and_calls)
 	(*mem)[0x0002] = 0x99;
 
 	execute_until(0x0003, true);
-
 	EXPECT_EQ(cpu->pc, 0x9964);
 
 	// JSR ABS: jumps to the subroutine of the given operand.
@@ -302,7 +356,6 @@ TEST(basic_cpu_test, jumps_and_calls)
 	(*mem)[0x9966] = 0xCC;
 
 	execute_until(0x9967, true);
-
 	EXPECT_EQ(cpu->pc, 0xCCAA);
 	// test stack
 }
@@ -389,7 +442,6 @@ TEST(basic_cpu_test, system)
 
 	// RTI: return from an interrupt request.
 	std::uint16_t old_pc = cpu->pc;
-
 	(*mem)[0xDDAC] = 0x40;
 
 	while (cpu->pc > 0xDDAB && cpu->pc < 0xDDAD) {

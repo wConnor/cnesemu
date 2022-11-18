@@ -84,6 +84,16 @@ std::uint16_t CPU6502::fetch_word()
 	return data;
 }
 
+void CPU6502::set_clear_negative_flag(const std::uint8_t &value)
+{
+	(value & 0b10000000) > 0 ? sr |= 0b10000000 : sr &= 0b01111111;
+}
+
+void CPU6502::set_clear_zero_flag(const std::uint8_t &value)
+{
+	value == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
+}
+
 bool CPU6502::complete()
 {
 	return cycles == 0;
@@ -109,7 +119,7 @@ std::uint8_t CPU6502::ABX()
 	std::uint8_t lo = this->fetch_byte();
 	std::uint8_t hi = this->fetch_byte();
 
-	addr_abs = ((hi << 8) | lo) + y;
+	addr_abs = ((hi << 8) | lo) + x;
 
 	// checks for page boundary crossing; additional cycle if so.
 	return (addr_abs & 0xFF00) != (hi << 8) ? 1 : 0;
@@ -222,7 +232,7 @@ std::uint8_t CPU6502::ADC()
 
 	acc += fetched + (sr & (1 << 0));
 
-	acc == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
+	set_clear_zero_flag(acc);
 
 	if ((acc & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -236,7 +246,7 @@ std::uint8_t CPU6502::AND()
 	fetch();
 	acc &= fetched;
 
-	acc == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
+	set_clear_zero_flag(acc);
 
 	if ((acc & 0b10000000) != 0) {
 		sr |= 0b10000000;
@@ -254,7 +264,7 @@ std::uint8_t CPU6502::ASL()
 		sr |= 0b00000001;
 	}
 
-	fetched == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
+	set_clear_zero_flag(fetched);
 
 	if ((fetched & 0b10000000) > 0) {
 		sr |= 0b10000000;
@@ -324,7 +334,7 @@ std::uint8_t CPU6502::BIT()
 {
 	fetch();
 
-	(acc & fetched) == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
+	set_clear_zero_flag(acc & fetched);
 
 	// ugly solution, but works.
 	(fetched >> 7) & 1 ? sr |= 0b10000000 : sr &= 0b01111111;
@@ -461,17 +471,9 @@ std::uint8_t CPU6502::CMP()
 	fetch();
 	std::uint8_t result = acc - fetched;
 
-	if (result >= fetched) {
-		sr |= 0b00000001;
-	}
-
-	if (result == fetched) {
-		sr |= 0b00000010;
-	}
-
-	if ((result & 0b10000000) > 0) {
-		sr |= 0b10000000;
-	}
+	acc >= fetched ? sr |= 0b00000001 : sr &= 0b11111110;
+	set_clear_zero_flag(result);
+	set_clear_negative_flag(result);
 
 	return 1;
 }
@@ -481,17 +483,9 @@ std::uint8_t CPU6502::CPX()
 	fetch();
 	std::uint8_t result = x - fetched;
 
-	if (result >= fetched) {
-		sr |= 0b00000001;
-	}
-
-	if (result == fetched) {
-		sr |= 0b00000010;
-	}
-
-	if ((result & 0b10000000) > 0) {
-		sr |= 0b10000000;
-	}
+	x >= fetched ? sr |= 0b00000001 : sr &= 0b11111110;
+	set_clear_zero_flag(result);
+	set_clear_negative_flag(result);
 
 	return 0;
 }
@@ -501,17 +495,9 @@ std::uint8_t CPU6502::CPY()
 	fetch();
 	std::uint8_t result = y - fetched;
 
-	if (result >= fetched) {
-		sr |= 0b00000001;
-	}
-
-	if (result == fetched) {
-		sr |= 0b00000010;
-	}
-
-	if ((result & 0b10000000) > 0) {
-		sr |= 0b10000000;
-	}
+	y >= fetched ? sr |= 0b00000001 : sr &= 0b11111110;
+	set_clear_zero_flag(result);
+	set_clear_negative_flag(result);
 
 	return 0;
 }
@@ -521,11 +507,8 @@ std::uint8_t CPU6502::DEC()
 	fetch();
 	this->write_word(addr_abs, (fetched - 1) & 0x00FF);
 
-	fetched - 1 == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if (((fetched - 1) & 0b10000000) != 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(fetched - 1);
+	set_clear_negative_flag(fetched - 1);
 
 	return 0;
 }
@@ -534,11 +517,8 @@ std::uint8_t CPU6502::DEX()
 {
 	x--;
 
-	x == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if ((x & 0b10000000) != 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(x);
+	set_clear_negative_flag(x);
 
 	return 0;
 }
@@ -547,11 +527,8 @@ std::uint8_t CPU6502::DEY()
 {
 	y--;
 
-	y == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if ((y & 0b10000000) != 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(y);
+	set_clear_negative_flag(y);
 
 	return 0;
 }
@@ -561,11 +538,8 @@ std::uint8_t CPU6502::EOR()
 	fetch();
 	acc ^= fetched;
 
-	acc == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if ((acc & 0b10000000) != 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(acc);
+	set_clear_negative_flag(acc);
 
 	return 0;
 }
@@ -575,11 +549,8 @@ std::uint8_t CPU6502::INC()
 	fetch();
 	this->write_word(addr_abs, fetched + 1);
 
-	fetched + 1 == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if (((fetched + 1) & 0b10000000) != 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(fetched + 1);
+	set_clear_negative_flag(fetched + 1);
 
 	return 0;
 }
@@ -588,11 +559,8 @@ std::uint8_t CPU6502::INX()
 {
 	x++;
 
-	x == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if ((x & 0b10000000) != 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(x);
+	set_clear_negative_flag(x);
 
 	return 0;
 }
@@ -601,11 +569,8 @@ std::uint8_t CPU6502::INY()
 {
 	y++;
 
-	y == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if ((y & 0b10000000) != 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(y);
+	set_clear_negative_flag(y);
 
 	return 0;
 }
@@ -629,11 +594,8 @@ std::uint8_t CPU6502::LDA()
 	fetch();
 	acc = fetched;
 
-	acc == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if ((acc & 0b10000000) != 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(acc);
+	set_clear_negative_flag(acc);
 
 	return 0;
 }
@@ -643,11 +605,8 @@ std::uint8_t CPU6502::LDX()
 	fetch();
 	x = fetched;
 
-	x == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if ((x & 0b10000000) != 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(x);
+	set_clear_negative_flag(x);
 
 	return 0;
 }
@@ -657,11 +616,8 @@ std::uint8_t CPU6502::LDY()
 	fetch();
 	y = fetched;
 
-	y == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if ((y & 0b10000000) != 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(y);
+	set_clear_negative_flag(y);
 
 	return 0;
 }
@@ -671,15 +627,13 @@ std::uint8_t CPU6502::LSR()
 	fetch();
 	fetched >>= 1;
 
+	// TODO: double-check reference.
 	if ((fetched & 0xFF00) > 0) {
 		sr |= 0b00000001;
 	}
 
-	fetched == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if ((fetched & 0b10000000) > 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(fetched);
+	set_clear_negative_flag(fetched);
 
 	if (instr_matrix[opcode].addr_mode == "IMP") {
 		acc = fetched;
@@ -700,11 +654,8 @@ std::uint8_t CPU6502::ORA()
 	fetch();
 	acc |= fetched;
 
-	acc == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if ((acc & 0b10000000) != 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(acc);
+	set_clear_negative_flag(acc);
 
 	return 0;
 }
@@ -726,11 +677,8 @@ std::uint8_t CPU6502::PLA()
 	acc = stack.top();
 	stack.pop();
 
-	acc == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if ((acc & 0b10000000) != 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(acc);
+	set_clear_negative_flag(acc);
 
 	return 0;
 }
@@ -752,11 +700,8 @@ std::uint8_t CPU6502::ROL()
 		sr |= 0b00000001;
 	}
 
-	fetched == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if ((fetched & 0b10000000) > 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(fetched);
+	set_clear_negative_flag(fetched);
 
 	if (instr_matrix[opcode].addr_mode == "IMP") {
 		acc = fetched;
@@ -776,11 +721,8 @@ std::uint8_t CPU6502::ROR()
 		sr |= 0b00000001;
 	}
 
-	fetched == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if ((fetched & 0b10000000) > 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(fetched);
+	set_clear_negative_flag(fetched);
 
 	if (instr_matrix[opcode].addr_mode == "IMP") {
 		acc = fetched;
@@ -858,11 +800,8 @@ std::uint8_t CPU6502::TAX()
 {
 	x = acc;
 
-	x == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if ((x & 0b10000000) != 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(x);
+	set_clear_negative_flag(x);
 
 	return 0;
 }
@@ -871,11 +810,8 @@ std::uint8_t CPU6502::TAY()
 {
 	y = acc;
 
-	y == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if ((y & 0b10000000) != 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(y);
+	set_clear_negative_flag(y);
 
 	return 0;
 }
@@ -884,11 +820,8 @@ std::uint8_t CPU6502::TSX()
 {
 	x = sp;
 
-	x == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if ((x & 0b10000000) != 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(x);
+	set_clear_negative_flag(x);
 
 	return 0;
 }
@@ -897,11 +830,8 @@ std::uint8_t CPU6502::TXA()
 {
 	acc = x;
 
-	acc == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if ((acc & 0b10000000) != 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(acc);
+	set_clear_negative_flag(acc);
 
 	return 0;
 }
@@ -916,11 +846,8 @@ std::uint8_t CPU6502::TYA()
 {
 	acc = y;
 
-	acc == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
-
-	if ((acc & 0b10000000) != 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_zero_flag(acc);
+	set_clear_negative_flag(acc);
 
 	return 0;
 }

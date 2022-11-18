@@ -66,6 +66,9 @@ private:
 	std::uint8_t fetch_byte();
 	std::uint16_t fetch_word();
 
+	void set_clear_negative_flag(const std::uint8_t &value);
+	void set_clear_zero_flag(const std::uint8_t &value);
+
 	std::unordered_map<std::string, std::function<std::uint8_t()>> addr_mode_map = {
 		{"ABS", std::bind(&CPU6502::ABS, this)}, // absolute
 		{"ABX", std::bind(&CPU6502::ABX, this)}, // absolute, offset by x reg
