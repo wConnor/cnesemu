@@ -24,13 +24,13 @@ void CPU6502::execute()
 	if (cycles == 0) {
 		opcode = this->fetch_byte();
 
-		cycles = instr_matrix[opcode].cycles + addr_mode_map[instr_matrix[opcode].addr_mode]() +
-			instr_map[instr_matrix[opcode].instr]();
-
 		spdlog::debug("opcode=0x{:02x} ({} {}), pc=0x{:04x}, acc=0x{:02x}, "
 					  "x=0x{:02x}, y=0x{:02x}, sp=0x{:02x}, sr=0b{:08b}",
-					  opcode, instr_matrix[opcode].instr, instr_matrix[opcode].addr_mode, pc, acc,
-					  x, y, sp, sr);
+					  opcode, instr_matrix[opcode].instr, instr_matrix[opcode].addr_mode,
+					  pc - 0x0001, acc, x, y, sp, sr);
+
+		cycles = instr_matrix[opcode].cycles + addr_mode_map[instr_matrix[opcode].addr_mode]() +
+			instr_map[instr_matrix[opcode].instr]();
 	}
 
 	std::this_thread::sleep_for(std::chrono::milliseconds(55));
@@ -213,9 +213,9 @@ std::uint8_t CPU6502::ZPY()
 
 std::uint8_t CPU6502::REL()
 {
-	addr_rel = this->fetch_word();
+	addr_rel = this->fetch_byte();
 
-	if (addr_rel & 0x80) {
+	if (addr_rel & 0b10000000) {
 		addr_rel |= 0xFF00;
 	}
 
@@ -265,10 +265,7 @@ std::uint8_t CPU6502::ASL()
 	}
 
 	set_clear_zero_flag(fetched);
-
-	if ((fetched & 0b10000000) > 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_negative_flag(fetched);
 
 	if (instr_matrix[opcode].addr_mode == "IMP") {
 		acc = fetched;
@@ -283,7 +280,8 @@ std::uint8_t CPU6502::BCC()
 {
 	if ((sr & 0b00000001) == 0) {
 		cycles++;
-		addr_abs = addr_rel + pc;
+
+		addr_abs = pc + addr_rel;
 
 		// checks for page boundary crossing, adding an additional cycle.
 		if ((addr_abs & 0xFF00) != (pc & 0xFF00)) {
@@ -298,9 +296,10 @@ std::uint8_t CPU6502::BCC()
 
 std::uint8_t CPU6502::BCS()
 {
-	if ((sr & 0b00000001) != 0) {
+	if ((sr & 0b00000001) > 0) {
 		cycles++;
-		addr_abs = addr_rel + pc;
+
+		addr_abs = pc + addr_rel;
 
 		// checks for page boundary crossing, adding an additional cycle.
 		if ((addr_abs & 0xFF00) != (pc & 0xFF00)) {
@@ -315,9 +314,10 @@ std::uint8_t CPU6502::BCS()
 
 std::uint8_t CPU6502::BEQ()
 {
-	if ((sr & 0b00000010) != 0) {
+	if ((sr & 0b00000010) > 0) {
 		cycles++;
-		addr_abs = addr_rel + pc;
+
+		addr_abs = pc + addr_rel;
 
 		// checks for page boundary crossing, adding an additional cycle.
 		if ((addr_abs & 0xFF00) != (pc & 0xFF00)) {
@@ -345,9 +345,10 @@ std::uint8_t CPU6502::BIT()
 
 std::uint8_t CPU6502::BMI()
 {
-	if ((sr & 0b1000000) != 0) {
+	if ((sr & 0b1000000) > 0) {
 		cycles++;
-		addr_abs = addr_rel + pc;
+
+		addr_abs = pc + addr_rel;
 
 		// checks for page boundary crossing, adding an additional cycle.
 		if ((addr_abs & 0xFF00) != (pc & 0xFF00)) {
@@ -364,7 +365,8 @@ std::uint8_t CPU6502::BNE()
 {
 	if ((sr & 0b00000010) == 0) {
 		cycles++;
-		addr_abs = addr_rel + pc;
+
+		addr_abs = pc + addr_rel;
 
 		// checks for page boundary crossing, adding an additional cycle.
 		if ((addr_abs & 0xFF00) != (pc & 0xFF00)) {
@@ -381,7 +383,8 @@ std::uint8_t CPU6502::BPL()
 {
 	if ((sr & 0b10000000) == 0) {
 		cycles++;
-		addr_abs = addr_rel + pc;
+
+		addr_abs = pc + addr_rel;
 
 		// checks for page boundary crossing, adding an additional cycle.
 		if ((addr_abs & 0xFF00) != (pc & 0xFF00)) {
@@ -412,7 +415,8 @@ std::uint8_t CPU6502::BVC()
 {
 	if ((sr & 0b01000000) == 0) {
 		cycles++;
-		addr_abs = addr_rel + pc;
+
+		addr_abs = pc + addr_rel;
 
 		// checks for page boundary crossing, adding an additional cycle.
 		if ((addr_abs & 0xFF00) != (pc & 0xFF00)) {
@@ -427,9 +431,10 @@ std::uint8_t CPU6502::BVC()
 
 std::uint8_t CPU6502::BVS()
 {
-	if ((sr & 0b01000000) != 0) {
+	if ((sr & 0b01000000) > 0) {
 		cycles++;
-		addr_abs = addr_rel + pc;
+
+		addr_abs = pc + addr_rel;
 
 		// checks for page boundary crossing, adding an additional cycle.
 		if ((addr_abs & 0xFF00) != (pc & 0xFF00)) {

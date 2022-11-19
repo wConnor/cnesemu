@@ -39,7 +39,8 @@ void execute_until(const std::uint16_t &addr, const bool &jump)
 			cpu->execute();
 		}
 	} else {
-		while (cpu->pc != addr) {
+		std::uint16_t prev_addr = cpu->pc;
+		while (cpu->pc > prev_addr && cpu->pc != addr) {
 			cpu->execute();
 		}
 	}
@@ -333,6 +334,14 @@ TEST(basic_cpu_test, shifts)
 
 	// ensure that reset vector jump has worked properly.
 	EXPECT_EQ(cpu->pc, 0x0000);
+
+	// ASL
+
+	// LSR
+
+	// ROL
+
+	// ROR
 }
 
 TEST(basic_cpu_test, jumps_and_calls)
@@ -366,6 +375,120 @@ TEST(basic_cpu_test, branches)
 
 	// ensure that reset vector jump has worked properly.
 	EXPECT_EQ(cpu->pc, 0x0000);
+	spdlog::set_level(spdlog::level::debug);
+
+	// BCC REL: if the carry flag is clear, add the relative displacement to the pc.
+	std::rand() % 2 ? cpu->sr |= 0b00000001 : cpu->sr &= 0b11111110; // randomise C flag.
+	(*mem)[0x0000] = 0x90;
+	(*mem)[0x0001] = 0x33;
+
+	if ((cpu->sr & 0b00000001) == 0) {
+		execute_until(0x0002 + (*mem)[0x0001], false);
+		EXPECT_EQ(cpu->pc, 0x0002 + (*mem)[0x0001]); // branch should have been created.
+	} else {
+		execute_until(0x0002, false);
+		EXPECT_EQ(cpu->pc, 0x0002); // pc should simply advance without a new branch.
+	}
+
+	// BCS REL: if the carry flag is set, add the relative displacement to the pc.
+	std::rand() % 2 ? cpu->sr |= 0b00000001 : cpu->sr &= 0b11111110; // randomise C flag.
+	cpu->pc = 0x1100;
+	(*mem)[0x1100] = 0xB0;
+	(*mem)[0x1101] = 0x22;
+
+	if ((cpu->sr & 0b00000001) > 0) {
+		execute_until(0x1102 + (*mem)[0x1101], true);
+		EXPECT_EQ(cpu->pc, 0x1102 + (*mem)[0x1101]); // branch should have been created.
+	} else {
+		execute_until(0x1102, false);
+		EXPECT_EQ(cpu->pc, 0x1102); // pc should simply advance without a new branch.
+	}
+
+	// BEQ REL: if the zero flag is set, add the relative displacement to the pc.
+	std::rand() % 2 ? cpu->sr |= 0b00000010 : cpu->sr &= 0b11111101; // randomise Z flag.
+	cpu->pc = 0x2200;
+	(*mem)[0x2200] = 0xF0;
+	(*mem)[0x2201] = 0x73;
+
+	if ((cpu->sr & 0b00000010) > 0) {
+		execute_until(0x2202 + (*mem)[0x2201], true);
+		EXPECT_EQ(cpu->pc, 0x2202 + (*mem)[0x2201]); // branch should have been created.
+	} else {
+		execute_until(0x2202, false);
+		EXPECT_EQ(cpu->pc, 0x2202); // pc should simply advance without a new branch.
+	}
+
+	// BMI REL: if the negative flag is set, add the relative displacement to the pc.
+	std::rand() % 2 ? cpu->sr |= 0b10000000 : cpu->sr &= 0b01111111; // randomise N flag.
+	cpu->pc = 0x3300;
+	(*mem)[0x3300] = 0x30;
+	(*mem)[0x3301] = 0x65;
+
+	if ((cpu->sr & 0b10000000) > 0) {
+		execute_until(0x3302 + (*mem)[0x3301], true);
+		EXPECT_EQ(cpu->pc, 0x3302 + (*mem)[0x3301]); // branch should have been created.
+	} else {
+		execute_until(0x3302, false);
+		EXPECT_EQ(cpu->pc, 0x3302); // pc should simply advance without a new branch.
+	}
+
+	// BNE REL: if the zero flag is clear, add the relative displacement to the pc.
+	std::rand() % 2 ? cpu->sr |= 0b00000010 : cpu->sr &= 0b11111101; // randomise Z flag.
+	cpu->pc = 0x4400;
+	(*mem)[0x4400] = 0xD0;
+	(*mem)[0x4401] = 0x21;
+
+	if ((cpu->sr & 0b00000010) == 0) {
+		execute_until(0x4402 + (*mem)[0x4401], true);
+		EXPECT_EQ(cpu->pc, 0x4402 + (*mem)[0x4401]); // branch should have been created.
+	} else {
+		execute_until(0x4402, false);
+		EXPECT_EQ(cpu->pc, 0x4402); // pc should simply advance without a new branch.
+	}
+
+	// BPL REL: if the negative flag is clear, add the relative displacement to the pc.
+	std::rand() % 2 ? cpu->sr |= 0b10000000 : cpu->sr &= 0b01111111; // randomise Z flag.
+	cpu->pc = 0x5500;
+	(*mem)[0x5500] = 0x10;
+	(*mem)[0x5501] = 0x08;
+
+	if ((cpu->sr & 0b10000000) == 0) {
+		execute_until(0x5502 + (*mem)[0x5501], true);
+		EXPECT_EQ(cpu->pc, 0x5502 + (*mem)[0x5501]); // branch should have been created.
+	} else {
+		execute_until(0x5502, false);
+		EXPECT_EQ(cpu->pc, 0x5502); // pc should simply advance without a new branch.
+	}
+
+	// BVC REL: if the overflow flag is clear, add the relative displacement to the pc.
+	std::rand() % 2 ? cpu->sr |= 0b01000000 : cpu->sr &= 0b10111111; // randomise O flag.
+	cpu->pc = 0x6600;
+	(*mem)[0x6600] = 0x50;
+	(*mem)[0x6601] = 0x55;
+
+	if ((cpu->sr & 0b01000000) == 0) {
+		execute_until(0x6602 + (*mem)[0x6601], true);
+		EXPECT_EQ(cpu->pc, 0x6602 + (*mem)[0x6601]); // branch should have been created.
+	} else {
+		execute_until(0x6602, false);
+		EXPECT_EQ(cpu->pc, 0x6602); // pc should simply advance without a new branch.
+	}
+
+	// BVS REL: if the overflow flag is set, add the relative displacement to the pc.
+	std::rand() % 2 ? cpu->sr |= 0b01000000 : cpu->sr &= 0b10111111; // randomise O flag.
+	cpu->pc = 0x7700;
+	(*mem)[0x7700] = 0x70;
+	(*mem)[0x7701] = 0xAA;
+
+	(*mem)[0x7702] = 0xEA; // NOP
+
+	if ((cpu->sr & 0b01000000) > 0) {
+		execute_until(0x7701 + (*mem)[0x7701], true);
+		EXPECT_EQ(cpu->pc, 0x7702 + (*mem)[0x7701]); // branch should have been created.
+	} else {
+		execute_until(0x7701, false);
+		EXPECT_EQ(cpu->pc, 0x7702); // pc should simply advance without a new branch.
+	}
 }
 
 TEST(basic_cpu_test, status_flag)
