@@ -345,7 +345,7 @@ std::uint8_t CPU6502::BIT()
 
 std::uint8_t CPU6502::BMI()
 {
-	if ((sr & 0b1000000) > 0) {
+	if ((sr & 0b10000000) > 0) {
 		cycles++;
 
 		addr_abs = pc + addr_rel;

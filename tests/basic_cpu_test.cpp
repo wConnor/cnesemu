@@ -34,13 +34,13 @@ void prepare_mem()
 
 void execute_until(const std::uint16_t &addr, const bool &jump)
 {
+	std::uint16_t prev_addr = cpu->pc;
 	if (jump) {
-		while (cpu->pc < addr) {
+		while (cpu->pc >= prev_addr && cpu->pc < addr) {
 			cpu->execute();
 		}
 	} else {
-		std::uint16_t prev_addr = cpu->pc;
-		while (cpu->pc > prev_addr && cpu->pc != addr) {
+		while (cpu->pc >= prev_addr && cpu->pc != addr) {
 			cpu->execute();
 		}
 	}
@@ -383,21 +383,21 @@ TEST(basic_cpu_test, branches)
 	(*mem)[0x0001] = 0x33;
 
 	if ((cpu->sr & 0b00000001) == 0) {
-		execute_until(0x0002 + (*mem)[0x0001], false);
+		execute_until(0x0002, true);
 		EXPECT_EQ(cpu->pc, 0x0002 + (*mem)[0x0001]); // branch should have been created.
 	} else {
 		execute_until(0x0002, false);
 		EXPECT_EQ(cpu->pc, 0x0002); // pc should simply advance without a new branch.
 	}
 
-	// BCS REL: if the carry flag is set, add the relative displacement to the pc.
+	// // BCS REL: if the carry flag is set, add the relative displacement to the pc.
 	std::rand() % 2 ? cpu->sr |= 0b00000001 : cpu->sr &= 0b11111110; // randomise C flag.
 	cpu->pc = 0x1100;
 	(*mem)[0x1100] = 0xB0;
 	(*mem)[0x1101] = 0x22;
 
 	if ((cpu->sr & 0b00000001) > 0) {
-		execute_until(0x1102 + (*mem)[0x1101], true);
+		execute_until(0x1102, true);
 		EXPECT_EQ(cpu->pc, 0x1102 + (*mem)[0x1101]); // branch should have been created.
 	} else {
 		execute_until(0x1102, false);
@@ -411,7 +411,7 @@ TEST(basic_cpu_test, branches)
 	(*mem)[0x2201] = 0x73;
 
 	if ((cpu->sr & 0b00000010) > 0) {
-		execute_until(0x2202 + (*mem)[0x2201], true);
+		execute_until(0x2202, true);
 		EXPECT_EQ(cpu->pc, 0x2202 + (*mem)[0x2201]); // branch should have been created.
 	} else {
 		execute_until(0x2202, false);
@@ -422,10 +422,10 @@ TEST(basic_cpu_test, branches)
 	std::rand() % 2 ? cpu->sr |= 0b10000000 : cpu->sr &= 0b01111111; // randomise N flag.
 	cpu->pc = 0x3300;
 	(*mem)[0x3300] = 0x30;
-	(*mem)[0x3301] = 0x65;
+	(*mem)[0x3301] = 0x04;
 
 	if ((cpu->sr & 0b10000000) > 0) {
-		execute_until(0x3302 + (*mem)[0x3301], true);
+		execute_until(0x3302, true);
 		EXPECT_EQ(cpu->pc, 0x3302 + (*mem)[0x3301]); // branch should have been created.
 	} else {
 		execute_until(0x3302, false);
@@ -439,7 +439,7 @@ TEST(basic_cpu_test, branches)
 	(*mem)[0x4401] = 0x21;
 
 	if ((cpu->sr & 0b00000010) == 0) {
-		execute_until(0x4402 + (*mem)[0x4401], true);
+		execute_until(0x4402, true);
 		EXPECT_EQ(cpu->pc, 0x4402 + (*mem)[0x4401]); // branch should have been created.
 	} else {
 		execute_until(0x4402, false);
@@ -453,7 +453,7 @@ TEST(basic_cpu_test, branches)
 	(*mem)[0x5501] = 0x08;
 
 	if ((cpu->sr & 0b10000000) == 0) {
-		execute_until(0x5502 + (*mem)[0x5501], true);
+		execute_until(0x5502, true);
 		EXPECT_EQ(cpu->pc, 0x5502 + (*mem)[0x5501]); // branch should have been created.
 	} else {
 		execute_until(0x5502, false);
@@ -467,7 +467,7 @@ TEST(basic_cpu_test, branches)
 	(*mem)[0x6601] = 0x55;
 
 	if ((cpu->sr & 0b01000000) == 0) {
-		execute_until(0x6602 + (*mem)[0x6601], true);
+		execute_until(0x6602, true);
 		EXPECT_EQ(cpu->pc, 0x6602 + (*mem)[0x6601]); // branch should have been created.
 	} else {
 		execute_until(0x6602, false);
@@ -478,15 +478,13 @@ TEST(basic_cpu_test, branches)
 	std::rand() % 2 ? cpu->sr |= 0b01000000 : cpu->sr &= 0b10111111; // randomise O flag.
 	cpu->pc = 0x7700;
 	(*mem)[0x7700] = 0x70;
-	(*mem)[0x7701] = 0xAA;
-
-	(*mem)[0x7702] = 0xEA; // NOP
+	(*mem)[0x7701] = 0x08;
 
 	if ((cpu->sr & 0b01000000) > 0) {
-		execute_until(0x7701 + (*mem)[0x7701], true);
+		execute_until(0x7702, true);
 		EXPECT_EQ(cpu->pc, 0x7702 + (*mem)[0x7701]); // branch should have been created.
 	} else {
-		execute_until(0x7701, false);
+		execute_until(0x7702, false);
 		EXPECT_EQ(cpu->pc, 0x7702); // pc should simply advance without a new branch.
 	}
 }

@@ -259,7 +259,7 @@ private:
 		{0x6D, "ADC", "ABS", 3, 4},
 		{0x6E, "ROR", "ABS", 3, 6},
 		{0x6F, "ILL", "ILL", 2, 2},
-		{0x70, "BVC", "REL", 2, 2},
+		{0x70, "BVS", "REL", 2, 2},
 		{0x71, "ADC", "INY", 2, 5},
 		{0x72, "ILL", "ILL", 2, 2},
 		{0x73, "ILL", "ILL", 2, 2},
