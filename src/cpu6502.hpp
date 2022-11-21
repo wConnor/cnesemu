@@ -14,12 +14,10 @@
 #include <limits>
 #include <map>
 #include <memory>
-#include <stack>
 #include <string>
 #include <thread>
 
 constexpr double CLOCK_SPEED_MHZ = 1.789773;
-constexpr std::uint8_t STACK_SIZE = 255;
 constexpr std::uint8_t INSTRUCTION_COUNT = 255;
 
 class CPU6502
@@ -42,11 +40,9 @@ private:
 	std::uint8_t acc = 0x00;
 	std::uint8_t x = 0x00;
 	std::uint8_t y = 0x00;
-	std::uint8_t sp = 0x00;
+	std::uint8_t sp = 0xFF;
 	std::uint8_t sr = 0b00100000;
 	std::uint16_t pc = 0x0000;
-
-	std::stack<std::uint8_t> stack;
 
 	INSTRUCTION current_instruction;
 
