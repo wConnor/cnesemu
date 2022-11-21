@@ -129,6 +129,50 @@ TEST(basic_cpu_test, stack_ops)
 
 	// ensure that reset vector jump has worked properly.
 	EXPECT_EQ(cpu->pc, 0x0000);
+
+	// TSX IMP: copies the current contents of the sp to the x register.
+	cpu->x = RAND_UINT8;
+	(*mem)[0x0000] = 0xBA;
+
+	execute_until(0x0001, false);
+	EXPECT_EQ(cpu->x, cpu->sp);
+
+	// TXS IMP: copies the current contents of the x register to the sp.
+	cpu->x = RAND_UINT8;
+	(*mem)[0x0001] = 0x9A;
+
+	execute_until(0x0002, false);
+	EXPECT_EQ(cpu->x, cpu->sp);
+
+	// PHA IMP: pushes a copy of the ACC onto the stack.
+	cpu->acc = RAND_UINT8;
+	(*mem)[0x0002] = 0x48;
+
+	execute_until(0x0003, false);
+	EXPECT_EQ(cpu->acc, (*mem)[0x0100 + cpu->sp + 1]);
+
+	// PHP IMP: pushes a copy of the sr onto the stack.
+	cpu->sr = RAND_UINT8;
+	(*mem)[0x0003] = 0x08;
+
+	execute_until(0x0004, false);
+	EXPECT_EQ(cpu->sr, (*mem)[0x0100 + cpu->sp + 1]);
+
+	// PLA IMP: pulls an 8-bit value from the stack and into the ACC.
+	std::uint8_t val = RAND_UINT8;
+	cpu->stack_push(val);
+	(*mem)[0x0004] = 0x68;
+
+	execute_until(0x0005, false);
+	EXPECT_EQ(cpu->acc, val);
+
+	// PLP IMP: pulls an 8-bit value from the stack and into the sr.
+	val = RAND_UINT8;
+	cpu->stack_push(val);
+	(*mem)[0x0005] = 0x28;
+
+	execute_until(0x0006, false);
+	EXPECT_EQ(cpu->sr, val);
 }
 
 TEST(basic_cpu_test, logical)
@@ -366,7 +410,12 @@ TEST(basic_cpu_test, jumps_and_calls)
 
 	execute_until(0x9967, true);
 	EXPECT_EQ(cpu->pc, 0xCCAA);
-	// test stack
+
+	// RTS IMP: returns to the calling routine after a jump.
+	(*mem)[0xCCAA] = 0x60;
+
+	execute_until(0xCCAB, true);
+	EXPECT_EQ(cpu->pc, 0x9967);
 }
 
 TEST(basic_cpu_test, branches)
@@ -375,7 +424,6 @@ TEST(basic_cpu_test, branches)
 
 	// ensure that reset vector jump has worked properly.
 	EXPECT_EQ(cpu->pc, 0x0000);
-	spdlog::set_level(spdlog::level::debug);
 
 	// BCC REL: if the carry flag is clear, add the relative displacement to the pc.
 	std::rand() % 2 ? cpu->sr |= 0b00000001 : cpu->sr &= 0b11111110; // randomise C flag.

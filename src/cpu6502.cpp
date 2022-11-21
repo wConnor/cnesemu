@@ -93,6 +93,18 @@ void CPU6502::set_clear_zero_flag(const std::uint8_t &value)
 	value == 0 ? sr |= 0b00000010 : sr &= 0b11111101;
 }
 
+void CPU6502::stack_push(const std::uint8_t &value)
+{
+	write_byte(0x0100 + sp, value);
+	sp--;
+}
+
+std::uint8_t CPU6502::stack_pop()
+{
+	sp++;
+	return read_byte(0x0100 + sp);
+}
+
 bool CPU6502::complete()
 {
 	return cycles == 0;
@@ -400,12 +412,9 @@ std::uint8_t CPU6502::BRK()
 {
 	pc++;
 
-	write_byte(0x0100 + sp, (pc >> 8) & 0xFF);
-	sp--;
-	write_byte(0x0100 + sp, pc & 0xFF);
-	sp--;
-	write_byte(0x0100 + sp, sr);
-	sp--;
+	stack_push((pc >> 8) & 0xFF);
+	stack_push(pc & 0xFF);
+	stack_push(sr);
 
 	pc = 0xFFFE;
 	std::uint8_t lo = fetch_byte(), hi = fetch_byte();
@@ -594,10 +603,8 @@ std::uint8_t CPU6502::JSR()
 {
 	pc--;
 
-	write_byte((pc >> 8 & 0xFF), 0x0100 + sp);
-	sp--;
-	write_byte(pc & 0xFF, 0x0100 + sp);
-	sp--;
+	stack_push((pc >> 8) & 0xFF);
+	stack_push(pc & 0xFF);
 
 	pc = addr_abs;
 
@@ -677,23 +684,19 @@ std::uint8_t CPU6502::ORA()
 
 std::uint8_t CPU6502::PHA()
 {
-	write_byte(0x0100 + sp, acc);
-	sp--;
+	stack_push(acc);
 	return 0;
 }
 
 std::uint8_t CPU6502::PHP()
 {
-	write_byte(0x0100 + sp, sr);
-	sp--;
+	stack_push(sr);
 	return 0;
 }
 
 std::uint8_t CPU6502::PLA()
 {
-	sp++;
-	acc = read_byte(0x0100 + sp);
-	write_byte(0x0100 + sp, 0x00);
+	acc = stack_pop();
 
 	set_clear_zero_flag(acc);
 	set_clear_negative_flag(acc);
@@ -703,9 +706,7 @@ std::uint8_t CPU6502::PLA()
 
 std::uint8_t CPU6502::PLP()
 {
-	sp++;
-	sr = read_byte(0x0100 + sp);
-	write_byte(0x0100 + sp, 0x00);
+	sr = stack_pop();
 
 	return 0;
 }
@@ -754,34 +755,22 @@ std::uint8_t CPU6502::ROR()
 
 std::uint8_t CPU6502::RTI()
 {
-	sp++;
-	sr = read_byte(0x0100 + sp);
-	write_byte(0x0100 + sp, 0x00);
+	sr = stack_pop();
 
-	sp++;
-	std::uint8_t lo = read_byte(0x0100 + sp);
-	write_byte(0x0100 + sp, 0x00);
-
-	sp++;
-	std::uint8_t hi = read_byte(0x0100 + sp);
-	write_byte(0x0100 + sp, 0x00);
-
+	std::uint8_t lo = stack_pop();
+	std::uint8_t hi = stack_pop();
 	pc = (hi << 8) | lo;
+
 	return 0;
 }
 
 std::uint8_t CPU6502::RTS()
 {
-	sp++;
-	std::uint8_t lo = read_byte(0x0100 + sp);
-	write_byte(0x0100 + sp, 0x00);
-
-	sp++;
-	std::uint8_t hi = read_byte(0x0100 + sp);
-	write_byte(0x0100 + sp, 0x00);
-
+	std::uint8_t lo = stack_pop();
+	std::uint8_t hi = stack_pop();
 	pc = (hi << 8) | lo;
 	pc++;
+
 	return 0;
 }
 

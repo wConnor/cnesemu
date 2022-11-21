@@ -65,6 +65,9 @@ private:
 	void set_clear_negative_flag(const std::uint8_t &value);
 	void set_clear_zero_flag(const std::uint8_t &value);
 
+	void stack_push(const std::uint8_t &value);
+	std::uint8_t stack_pop();
+
 	std::unordered_map<std::string, std::function<std::uint8_t()>> addr_mode_map = {
 		{"ABS", std::bind(&CPU6502::ABS, this)}, // absolute
 		{"ABX", std::bind(&CPU6502::ABX, this)}, // absolute, offset by x reg
