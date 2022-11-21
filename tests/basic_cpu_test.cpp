@@ -379,13 +379,65 @@ TEST(basic_cpu_test, shifts)
 	// ensure that reset vector jump has worked properly.
 	EXPECT_EQ(cpu->pc, 0x0000);
 
-	// ASL
+	// ASL IMP: shifts all bits of the ACC or memory contents one bit to the left.
+	cpu->acc = RAND_UINT8;
+	std::uint8_t old_acc = cpu->acc;
+	(*mem)[0x0000] = 0x0A;
 
-	// LSR
+	execute_until(0x0001, false);
 
-	// ROL
+	if ((old_acc & 0b10000000) > 0) {
+		EXPECT_EQ(cpu->acc, old_acc * 2 - std::numeric_limits<std::uint8_t>::max() - 1);
+		EXPECT_GT(cpu->sr & 0b00000001, 0);
+	} else {
+		EXPECT_EQ(cpu->acc, old_acc * 2);
+		EXPECT_EQ(cpu->sr & 0b00000001, 0);
+	}
 
-	// ROR
+	// LSR ABS: shifts all bits of the ACC or memory contents one bit to the right.
+	(*mem)[0x0001] = 0x4E;
+	(*mem)[0x0002] = 0x22;
+	(*mem)[0x0003] = 0x55;
+
+	std::uint8_t val = RAND_UINT8;
+	(*mem)[0x5522] = val;
+
+	execute_until(0x0004, false);
+	if ((val & 0b00000001) > 0) {
+		EXPECT_GT(cpu->sr & 0b00000001, 0);
+	} else {
+		EXPECT_EQ(cpu->sr & 0b00000001, 0);
+	}
+
+	EXPECT_EQ((*mem)[0x5522], val / 2);
+
+	// ROL IMP: move each of the bits in the ACC or memory to the left.
+	cpu->acc = RAND_UINT8;
+	old_acc = cpu->acc;
+	(*mem)[0x0004] = 0x2A;
+
+	execute_until(0x0005, false);
+	if ((old_acc & 0b10000000) > 0) {
+		EXPECT_EQ(cpu->acc, old_acc * 2 - std::numeric_limits<std::uint8_t>::max() - 1);
+		EXPECT_GT(cpu->sr & 0b00000001, 0);
+	} else {
+		EXPECT_EQ(cpu->acc, old_acc * 2);
+		EXPECT_EQ(cpu->sr & 0b00000001, 0);
+	}
+
+	// ROR ACC: move each of the bits in the ACC or memory to the right.
+	cpu->acc = RAND_UINT8;
+	old_acc = cpu->acc;
+	(*mem)[0x0005] = 0x6A;
+
+	execute_until(0x0006, false);
+	if ((old_acc & 0b10000000) > 0) {
+		EXPECT_GT(cpu->sr & 0b00000001, 0);
+	} else {
+		EXPECT_EQ(cpu->sr & 0b00000001, 0);
+	}
+
+	EXPECT_EQ(cpu->acc, old_acc / 2);
 }
 
 TEST(basic_cpu_test, jumps_and_calls)
@@ -586,7 +638,6 @@ TEST(basic_cpu_test, system)
 	cpu->set_bus(bus);
 	cpu->reset();
 
-	// set to 0x0000 instead of the reset vector to test the BRK operation.
 	cpu->pc = 0x7799;
 
 	// BRK: forces the generation of an interrupt request.

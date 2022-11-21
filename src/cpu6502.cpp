@@ -147,12 +147,6 @@ std::uint8_t CPU6502::ABY()
 	return (addr_abs & 0xFF00) != (hi << 8) ? 1 : 0;
 }
 
-std::uint8_t CPU6502::ACC()
-{
-	fetched = acc;
-	return 0;
-}
-
 std::uint8_t CPU6502::IND()
 {
 	std::uint8_t lo_ptr = this->fetch_byte();
@@ -192,6 +186,7 @@ std::uint8_t CPU6502::IZY()
 
 std::uint8_t CPU6502::IMP()
 {
+	fetched = acc;
 	return 0;
 }
 
@@ -269,16 +264,13 @@ std::uint8_t CPU6502::AND()
 std::uint8_t CPU6502::ASL()
 {
 	fetch();
+	((fetched & 0b10000000) > 0) ? sr |= 0b00000001 : sr &= 0b11111110;
 	fetched <<= 1;
-
-	if ((fetched & 0xFF00) > 0) {
-		sr |= 0b00000001;
-	}
 
 	set_clear_zero_flag(fetched);
 	set_clear_negative_flag(fetched);
 
-	if (instr_matrix[opcode].addr_mode == "IMP") {
+	if (instr_matrix[opcode].addr_mode == "IMP" || instr_matrix[opcode].addr_mode == "ACC") {
 		acc = fetched;
 	} else {
 		write_byte(addr_abs, fetched);
@@ -414,12 +406,13 @@ std::uint8_t CPU6502::BRK()
 
 	stack_push((pc >> 8) & 0xFF);
 	stack_push(pc & 0xFF);
+
+	sr |= 0b00010100; // set B and I flag.
 	stack_push(sr);
 
 	pc = 0xFFFE;
 	std::uint8_t lo = fetch_byte(), hi = fetch_byte();
 	pc = (hi << 8) | lo;
-	sr |= 0b00010000;
 
 	return 0;
 }
@@ -647,12 +640,8 @@ std::uint8_t CPU6502::LDY()
 std::uint8_t CPU6502::LSR()
 {
 	fetch();
+	((fetched & 0b00000001) > 0) ? sr |= 0b00000001 : sr &= 0b11111110;
 	fetched >>= 1;
-
-	// TODO: double-check reference.
-	if ((fetched & 0xFF00) > 0) {
-		sr |= 0b00000001;
-	}
 
 	set_clear_zero_flag(fetched);
 	set_clear_negative_flag(fetched);
@@ -714,11 +703,8 @@ std::uint8_t CPU6502::PLP()
 std::uint8_t CPU6502::ROL()
 {
 	fetch();
+	((fetched & 0b10000000) > 0) ? sr |= 0b00000001 : sr &= 0b11111110;
 	fetched <<= 1;
-
-	if ((fetched & 0xFF00) > 0) {
-		sr |= 0b00000001;
-	}
 
 	set_clear_zero_flag(fetched);
 	set_clear_negative_flag(fetched);
@@ -735,11 +721,8 @@ std::uint8_t CPU6502::ROL()
 std::uint8_t CPU6502::ROR()
 {
 	fetch();
-	std::uint8_t temp = fetched >> 1;
-
-	if ((fetched & 0xFF00) > 0) {
-		sr |= 0b00000001;
-	}
+	((fetched & 0b00000001) > 0) ? sr |= 0b00000001 : sr &= 0b11111110;
+	fetched >>= 1;
 
 	set_clear_zero_flag(fetched);
 	set_clear_negative_flag(fetched);
@@ -882,7 +865,7 @@ std::uint8_t CPU6502::ILL()
 void CPU6502::IRQ()
 {
 	// if I flag (bit 2) is clear, interrupts are allowed.
-	if ((sr & 0b00000000) == 0) {
+	if ((sr & 0b00000100) == 0) {
 	}
 }
 

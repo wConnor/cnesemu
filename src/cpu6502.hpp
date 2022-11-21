@@ -72,7 +72,6 @@ private:
 		{"ABS", std::bind(&CPU6502::ABS, this)}, // absolute
 		{"ABX", std::bind(&CPU6502::ABX, this)}, // absolute, offset by x reg
 		{"ABY", std::bind(&CPU6502::ABY, this)}, // absolute, offset by y reg
-		{"ACC", std::bind(&CPU6502::ACC, this)}, // accumulator
 		{"IND", std::bind(&CPU6502::IND, this)}, // indirect
 		{"IZX", std::bind(&CPU6502::IZX, this)}, // indirect, offset by x reg
 		{"IZY", std::bind(&CPU6502::IZY, this)}, // indirect, offset by y reg
@@ -156,7 +155,7 @@ private:
 		{0x07, "ILL", "ILL", 2, 2},
 		{0x08, "PHP", "IMP", 1, 3},
 		{0x09, "ORA", "IMM", 2, 2},
-		{0x0A, "ASL", "ACC", 0, 2},
+		{0x0A, "ASL", "IMP", 0, 2},
 		{0x0B, "ILL", "ILL", 2, 2},
 		{0x0C, "ILL", "ILL", 2, 2},
 		{0x0D, "ORA", "ABS", 3, 4},
@@ -188,7 +187,7 @@ private:
 		{0x27, "ILL", "ILL", 2, 2},
 		{0x28, "PLP", "IMP", 1, 4},
 		{0x29, "AND", "IMM", 2, 2},
-		{0x2A, "ROL", "ACC", 0, 2},
+		{0x2A, "ROL", "IMP", 0, 2},
 		{0x2B, "ILL", "ILL", 2, 2},
 		{0x2C, "BIT", "ABS", 3, 4},
 		{0x2D, "AND", "ABS", 3, 4},
@@ -220,7 +219,7 @@ private:
 		{0x47, "ILL", "ILL", 2, 2},
 		{0x48, "PHA", "IMP", 1, 3},
 		{0x49, "EOR", "IMM", 2, 2},
-		{0x4A, "LSR", "ACC", 0, 2},
+		{0x4A, "LSR", "IMP", 0, 2},
 		{0x4B, "ILL", "ILL", 2, 2},
 		{0x4C, "JMP", "ABS", 3, 3},
 		{0x4D, "EOR", "ABS", 3, 4},
@@ -252,7 +251,7 @@ private:
 		{0x67, "ILL", "ILL", 2, 2},
 		{0x68, "PLA", "IMP", 1, 4},
 		{0x69, "ADC", "IMM", 2, 2},
-		{0x6A, "ROR", "ACC", 0, 2},
+		{0x6A, "ROR", "IMP", 0, 2},
 		{0x6B, "ILL", "ILL", 2, 2},
 		{0x6C, "JMP", "IND", 3, 5},
 		{0x6D, "ADC", "ABS", 3, 4},
@@ -407,7 +406,6 @@ private:
 	std::uint8_t ABS();
 	std::uint8_t ABX();
 	std::uint8_t ABY();
-	std::uint8_t ACC();
 	std::uint8_t IND();
 	std::uint8_t IZX();
 	std::uint8_t IZY();
