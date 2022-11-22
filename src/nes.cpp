@@ -23,8 +23,9 @@ void NES::eject_cartridge()
 
 void NES::power_on()
 {
-	// rom_contents = cartridge->load();
-	// spdlog::debug("Loaded ROM of size {0:d} bytes.", rom_contents->size());
+	rom_contents = cartridge->load();
+	mem = rom_contents;
+	spdlog::debug("Loaded ROM of size {0:d} bytes.", rom_contents->size());
 
 	bus->set_mem(this->mem);
 	cpu->set_bus(this->bus);
@@ -39,7 +40,7 @@ void NES::power_on()
 
 void NES::power_off()
 {
-	//video->clear();
+	// video->clear();
 	//...
 	spdlog::debug("NES powered off.");
 }
@@ -52,5 +53,4 @@ void NES::reset()
 
 NES::~NES()
 {
-
 }

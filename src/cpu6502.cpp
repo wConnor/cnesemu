@@ -13,7 +13,7 @@ void CPU6502::reset()
 	std::uint8_t lo = fetch_byte(), hi = fetch_byte();
 	pc = (hi << 8) | lo;
 	sp = 0xFF;
-
+	pc = 0x0400; // for 6502_functional_test.bin
 	spdlog::debug("CPU reset. pc=0x{:04x}", pc);
 	cycles = 8;
 }
@@ -32,7 +32,7 @@ void CPU6502::execute()
 			instr_map[instr_matrix[opcode].instr]();
 	}
 
-	std::this_thread::sleep_for(std::chrono::milliseconds(55));
+	std::this_thread::sleep_for(std::chrono::milliseconds(30));
 	cycles--;
 }
 
@@ -198,21 +198,21 @@ std::uint8_t CPU6502::IMM()
 
 std::uint8_t CPU6502::ZPG()
 {
-	addr_abs = this->fetch_word();
+	addr_abs = this->fetch_byte();
 	addr_abs &= 0x00FF;
 	return 0;
 }
 
 std::uint8_t CPU6502::ZPX()
 {
-	addr_abs = (this->fetch_word() + x);
+	addr_abs = (this->fetch_byte() + x);
 	addr_abs &= 0x00FF;
 	return 0;
 }
 
 std::uint8_t CPU6502::ZPY()
 {
-	addr_abs = (this->fetch_word() + y);
+	addr_abs = (this->fetch_byte() + y);
 	addr_abs &= 0x00FF;
 	return 0;
 }
