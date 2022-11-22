@@ -244,11 +244,27 @@ TEST(basic_cpu_test, arithmetic)
 	// ensure that reset vector jump has worked properly.
 	EXPECT_EQ(cpu->pc, 0x0000);
 
-	// ADC
+	// ADC IMM: adds the contents of a memory location to the acc w/ the carry bit.
+	cpu->pc = 0x1110;
+	cpu->acc = 50;
+	std::uint8_t old_acc = cpu->acc;
+	(*mem)[0x1110] = 0x69;
+	(*mem)[0x1111] = 0x0A;
 
-	// SBC
+	execute_until(0x1112, false);
+	EXPECT_EQ(cpu->acc, old_acc + (*mem)[0x1111]);
+
+	// SBC IMM: subtracts the contents of a memory location from the acc w/ not of carry bit.
+	cpu->acc = 100;
+	old_acc = cpu->acc;
+	(*mem)[0x1112] = 0xE9;
+	(*mem)[0x1113] = 0x1B;
+
+	execute_until(0x1114, false);
+	EXPECT_EQ(cpu->acc, old_acc - (*mem)[0x1113] - 1);
 
 	// CMP ABX: compares the contents of ACC with a value held in memory.
+	cpu->pc = 0x0000;
 	cpu->acc = RAND_UINT8; // random ACC value.
 	cpu->x = 0x05;	   // offset to test ABX addressing.
 	(*mem)[0x0000] = 0xDD;

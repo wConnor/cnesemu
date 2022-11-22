@@ -53,6 +53,8 @@ private:
 	std::uint16_t addr_rel = 0x0000;
 	std::uint8_t cycles = 0;
 
+	bool sub = false;
+
 	std::uint8_t read_byte(const std::uint16_t &addr);
 	void write_byte(const std::uint16_t &addr, const std::uint8_t &data);
 

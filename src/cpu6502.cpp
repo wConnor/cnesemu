@@ -232,17 +232,19 @@ std::uint8_t CPU6502::REL()
 std::uint8_t CPU6502::ADC()
 {
 	fetch();
-	if (acc > 0 && fetched > std::numeric_limits<std::uint8_t>::max() - acc - (sr & (1 << 0))) {
-		// sr |= 0b10000001; // definitely wrong; must study more.
+	if (sub) {
+		fetched = ~fetched;
+		sub = false;
 	}
-
-	acc += fetched + (sr & (1 << 0));
+	const bool bits_same = !((acc ^ fetched) & (sr & 0b10000000));
+	std::uint16_t result = acc;
+	result += fetched + (sr & 0b00000001);
+	acc = (result & 0xFF);
 
 	set_clear_zero_flag(acc);
-
-	if ((acc & 0b10000000) != 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_negative_flag(acc);
+	(acc > 0xFF) ? sr |= 0b00000001 : sr &= 0b11111110;
+	(bits_same && ((acc ^ fetched) & (sr & 0b10000000))) ? sr |= 0b01000000 : sr &= 0b10111111;
 
 	return 1;
 }
@@ -759,7 +761,8 @@ std::uint8_t CPU6502::RTS()
 
 std::uint8_t CPU6502::SBC()
 {
-	fetch();
+	sub = true;
+	ADC();
 
 	return 0;
 }
