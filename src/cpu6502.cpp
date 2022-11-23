@@ -13,7 +13,7 @@ void CPU6502::reset()
 	std::uint8_t lo = fetch_byte(), hi = fetch_byte();
 	pc = (hi << 8) | lo;
 	sp = 0xFF;
-	pc = 0x0400; // for 6502_functional_test.bin
+
 	spdlog::debug("CPU reset. pc=0x{:04x}", pc);
 	cycles = 8;
 }
@@ -32,7 +32,7 @@ void CPU6502::execute()
 			instr_map[instr_matrix[opcode].instr]();
 	}
 
-	std::this_thread::sleep_for(std::chrono::milliseconds(30));
+	std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	cycles--;
 }
 
@@ -95,14 +95,14 @@ void CPU6502::set_clear_zero_flag(const std::uint8_t &value)
 
 void CPU6502::stack_push(const std::uint8_t &value)
 {
-	write_byte(0x0100 + sp, value);
+	write_byte(STACK_BASE_ADDR + sp, value);
 	sp--;
 }
 
 std::uint8_t CPU6502::stack_pop()
 {
 	sp++;
-	return read_byte(0x0100 + sp);
+	return read_byte(STACK_BASE_ADDR + sp);
 }
 
 bool CPU6502::complete()
@@ -272,7 +272,7 @@ std::uint8_t CPU6502::ASL()
 	set_clear_zero_flag(fetched);
 	set_clear_negative_flag(fetched);
 
-	if (instr_matrix[opcode].addr_mode == "IMP" || instr_matrix[opcode].addr_mode == "ACC") {
+	if (instr_matrix[opcode].addr_mode == "IMP") {
 		acc = fetched;
 	} else {
 		write_byte(addr_abs, fetched);
@@ -518,7 +518,7 @@ std::uint8_t CPU6502::CPY()
 std::uint8_t CPU6502::DEC()
 {
 	fetch();
-	this->write_word(addr_abs, (fetched - 1) & 0x00FF);
+	this->write_byte(addr_abs, fetched - 1);
 
 	set_clear_zero_flag(fetched - 1);
 	set_clear_negative_flag(fetched - 1);
@@ -614,7 +614,7 @@ std::uint8_t CPU6502::LDA()
 	set_clear_zero_flag(acc);
 	set_clear_negative_flag(acc);
 
-	return 0;
+	return 1;
 }
 
 std::uint8_t CPU6502::LDX()
@@ -625,7 +625,7 @@ std::uint8_t CPU6502::LDX()
 	set_clear_zero_flag(x);
 	set_clear_negative_flag(x);
 
-	return 0;
+	return 1;
 }
 
 std::uint8_t CPU6502::LDY()
@@ -636,7 +636,7 @@ std::uint8_t CPU6502::LDY()
 	set_clear_zero_flag(y);
 	set_clear_negative_flag(y);
 
-	return 0;
+	return 1;
 }
 
 std::uint8_t CPU6502::LSR()
@@ -682,6 +682,7 @@ std::uint8_t CPU6502::PHA()
 std::uint8_t CPU6502::PHP()
 {
 	stack_push(sr);
+	sr |= 0b00010000;
 	return 0;
 }
 
@@ -705,8 +706,10 @@ std::uint8_t CPU6502::PLP()
 std::uint8_t CPU6502::ROL()
 {
 	fetch();
-	((fetched & 0b10000000) > 0) ? sr |= 0b00000001 : sr &= 0b11111110;
+	bool new_c_bit = (sr & 0b00000001) > 0 ? (sr & 0b00000010) : 0;
+	(fetched & 0b10000000) > 0 ? sr |= 0b00000001 : sr &= 0b11111110;
 	fetched <<= 1;
+	fetched |= new_c_bit;
 
 	set_clear_zero_flag(fetched);
 	set_clear_negative_flag(fetched);
@@ -723,8 +726,14 @@ std::uint8_t CPU6502::ROL()
 std::uint8_t CPU6502::ROR()
 {
 	fetch();
-	((fetched & 0b00000001) > 0) ? sr |= 0b00000001 : sr &= 0b11111110;
+	bool old_c_bit = (fetched & 0b00000001) > 0;
 	fetched >>= 1;
+
+	if ((sr & 0b00000001) > 0) {
+		fetched |= 0b10000000;
+	}
+
+	old_c_bit ? sr |= 0b00000001 : sr &= 0b11111110;
 
 	set_clear_zero_flag(fetched);
 	set_clear_negative_flag(fetched);

@@ -19,6 +19,7 @@
 
 constexpr double CLOCK_SPEED_MHZ = 1.789773;
 constexpr std::uint8_t INSTRUCTION_COUNT = 255;
+constexpr std::uint16_t STACK_BASE_ADDR = 0x0100;
 
 class CPU6502
 {

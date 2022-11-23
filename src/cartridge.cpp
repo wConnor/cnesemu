@@ -23,7 +23,7 @@ std::shared_ptr<std::array<std::uint8_t, MAX_CARTRIDGE_SIZE>> Cartridge::load()
 		this->contents = std::make_shared<std::array<std::uint8_t, MAX_CARTRIDGE_SIZE>>();
 
 		while (file.good()) {
-			for (int i = 0; i != MAX_CARTRIDGE_SIZE; ++i) {
+			for (int i = 0; i <= MAX_CARTRIDGE_SIZE; ++i) {
 				file >> (*this->contents)[i];
 			}
 		}
