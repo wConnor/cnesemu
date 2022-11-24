@@ -17,15 +17,14 @@ void NES::insert_cartridge(const std::filesystem::path &rom)
 void NES::eject_cartridge()
 {
 	cartridge = nullptr;
-	rom_contents = nullptr;
 	spdlog::debug("Cartridge ejected. No ROM loaded.");
 }
 
 void NES::power_on()
 {
-	rom_contents = cartridge->load();
-	mem = rom_contents;
-	spdlog::debug("Loaded ROM of size {0:d} bytes.", rom_contents->size());
+	std::vector<std::uint8_t> buffer = cartridge->load();
+	spdlog::debug("Loaded ROM of size {0:d} bytes.", buffer.size());
+	std::move(buffer.begin(), buffer.end(), mem->begin());
 
 	bus->set_mem(this->mem);
 	cpu->set_bus(this->bus);

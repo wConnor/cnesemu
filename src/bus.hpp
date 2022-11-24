@@ -5,7 +5,7 @@
 #include <memory>
 #include <cstdint>
 
-constexpr std::uint16_t MEM_SIZE = 0xFFFF;
+constexpr int MEM_SIZE = 0xFFFF + 1;
 
 class Bus
 {

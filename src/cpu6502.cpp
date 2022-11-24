@@ -232,19 +232,18 @@ std::uint8_t CPU6502::REL()
 std::uint8_t CPU6502::ADC()
 {
 	fetch();
+
 	if (sub) {
 		fetched = ~fetched;
 		sub = false;
 	}
-	const bool bits_same = !((acc ^ fetched) & (sr & 0b10000000));
-	std::uint16_t result = acc;
-	result += fetched + (sr & 0b00000001);
-	acc = (result & 0xFF);
 
-	set_clear_zero_flag(acc);
-	set_clear_negative_flag(acc);
-	(acc > 0xFF) ? sr |= 0b00000001 : sr &= 0b11111110;
-	(bits_same && ((acc ^ fetched) & (sr & 0b10000000))) ? sr |= 0b01000000 : sr &= 0b10111111;
+	std::uint16_t temp = acc + fetched + (sr & 0b00000001);
+	temp > std::numeric_limits<std::uint8_t>::max() ? sr |= 0b00000001 : sr &= 0b11111110;
+	set_clear_zero_flag(temp);
+	set_clear_negative_flag(temp);
+	(~(acc ^ fetched) & (acc ^ temp)) & 0b10000000 ? sr |= 0b01000000 : sr &= 0b10111111;
+	acc = temp & 0x00FF;
 
 	return 1;
 }
@@ -255,10 +254,7 @@ std::uint8_t CPU6502::AND()
 	acc &= fetched;
 
 	set_clear_zero_flag(acc);
-
-	if ((acc & 0b10000000) != 0) {
-		sr |= 0b10000000;
-	}
+	set_clear_negative_flag(acc);
 
 	return 1;
 }

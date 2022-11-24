@@ -15,28 +15,24 @@ Cartridge::Cartridge(const std::filesystem::path &rom)
 
 // loads the contents of either the given ROM file or the string literal into
 // the contents std::array for use by the NES.
-std::shared_ptr<std::array<std::uint8_t, MAX_CARTRIDGE_SIZE>> Cartridge::load()
+std::vector<std::uint8_t> Cartridge::load()
 {
+	std::vector<std::uint8_t> contents;
+
 	// implies that a ROM path has been passed instead of a string literal.
 	if (this->temp.empty()) {
-		std::ifstream file(this->loaded_cartridge, std::ios::in | std::ios::binary);
-		this->contents = std::make_shared<std::array<std::uint8_t, MAX_CARTRIDGE_SIZE>>();
-
-		while (file.good()) {
-			for (int i = 0; i <= MAX_CARTRIDGE_SIZE; ++i) {
-				file >> (*this->contents)[i];
-			}
-		}
+		std::ifstream file(this->loaded_cartridge, std::ios::binary);
+		std::vector<std::uint8_t> buffer(std::istreambuf_iterator<char>(file), {});
+		contents = buffer;
 	} else {
 		for (int i = 0; i != temp.size(); ++i) {
-			(*this->contents)[i] = temp[i];
+			contents[i] = temp[i];
 		}
 	}
 
-	return this->contents;
+	return contents;
 }
 
 Cartridge::~Cartridge()
 {
-
 }

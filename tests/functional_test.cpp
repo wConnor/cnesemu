@@ -8,7 +8,7 @@
 #include "cpu6502.hpp"
 #undef private
 
-TEST(functional_test, run_klaus_function_test_rom)
+TEST(functional_test, run_functional_test_bin)
 {
 	auto cpu = std::make_unique<CPU6502>();
 	auto bus = std::make_shared<Bus>();
@@ -17,7 +17,9 @@ TEST(functional_test, run_klaus_function_test_rom)
 
 	spdlog::set_level(spdlog::level::debug);
 
-	mem = cartridge->load();
+	std::vector<std::uint8_t> buffer = cartridge->load();
+	std::move(buffer.begin(), buffer.end(), mem->begin());
+
 	bus->set_mem(mem);
 	cpu->set_bus(bus);
 	cpu->pc = 0x0400; // starting address for the functional test.
@@ -25,7 +27,6 @@ TEST(functional_test, run_klaus_function_test_rom)
 	EXPECT_EQ((*mem)[cpu->pc], 0xD8); // first instruction to be executed.
 
 	while (true) {
-		spdlog::debug("PC={:04x}", cpu->pc);
 		cpu->execute();
 	}
 }
