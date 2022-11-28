@@ -233,16 +233,11 @@ std::uint8_t CPU6502::ADC()
 {
 	fetch();
 
-	if (sub) {
-		fetched = ~fetched;
-		sub = false;
-	}
-
 	std::uint16_t temp = acc + fetched + (sr & 0b00000001);
 	temp > std::numeric_limits<std::uint8_t>::max() ? sr |= 0b00000001 : sr &= 0b11111110;
 	set_clear_zero_flag(temp);
 	set_clear_negative_flag(temp);
-	(~(acc ^ fetched) & (acc ^ temp)) & 0b10000000 ? sr |= 0b01000000 : sr &= 0b10111111;
+	~(acc ^ fetched) & (acc ^ temp) & 0b10000000 ? sr |= 0b01000000 : sr &= 0b10111111;
 	acc = temp & 0x00FF;
 
 	return 1;
@@ -766,8 +761,14 @@ std::uint8_t CPU6502::RTS()
 
 std::uint8_t CPU6502::SBC()
 {
-	sub = true;
-	ADC();
+	fetch();
+	std::uint16_t val = fetched ^ 0x00FF;
+	std::uint16_t temp = acc + val + (sr & 0b00000001);
+	(temp & 0xFF00) ? sr |= 0b00000001 : sr &= 0b11111110;
+	(temp & 0x00FF) ? sr |= 0b00000010 : sr &= 0b11111101;
+	(temp ^ acc) & (temp ^ val) ? sr |= 0b01000000 : sr &= 0b10111111;
+	(temp & 0x0080) ? sr |= 0b10000000 : sr &= 0b01111111;
+	acc = temp & 0x00FF;
 
 	return 0;
 }
